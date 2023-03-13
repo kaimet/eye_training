@@ -107,6 +107,7 @@
       var isDragging = false;
       var draggedCircle;
 			var dcdX, dcdY;
+			var isLocked = false;
 
       // Function to check if mouse is over a circle on the right canvas
       function getMouseOverCircle() {
@@ -124,6 +125,7 @@
 
      // Add event listeners for mousedown,mousemove,and mouseup on the right canvas 
      rightCanvas.addEventListener("mousedown",function(e){
+       if(isLocked) return;
        mouseX=e.clientX-rightCanvas.offsetLeft; 
        mouseY=e.clientY-rightCanvas.offsetTop; 
        draggedCircle=getMouseOverCircle(); 
@@ -135,7 +137,7 @@
      }); 
 
      rightCanvas.addEventListener("mousemove",function(e){
-       if(isDragging){
+       if(isDragging && !isLocked){
          mouseX=e.clientX-rightCanvas.offsetLeft; 
          mouseY=e.clientY-rightCanvas.offsetTop; 
          draggedCircle.x=mouseX + dcdX; 
@@ -172,7 +174,6 @@
 
 			var countdown = setInterval(function() {
 					timeLeft--;
-					//timerElement.textContent = timeLeft + " seconds remaining";
 					timerElement.value = timeLeft;
 					if (timeLeft <= 0) {
 							clearInterval(countdown);
@@ -182,12 +183,14 @@
 			var timeoutID = setTimeout(function() {
 					clearInterval(countdown);
 					drawCircles();
+					isLocked=true;
 			}, maxtime*1000);
 
 			document.getElementById("finishButton").addEventListener("click", function() {
 					clearTimeout(timeoutID);
 					clearInterval(countdown);
 					drawCircles();
+					isLocked=true;
 			});
     </script>
   </body>
