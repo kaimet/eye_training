@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Drag the Circles on their places</title>
+    <title>Move Circles</title>
   </head>
   <body>
 	  <!--<div id="timer" style="font-size: 20px;"></div> -->
@@ -16,10 +16,12 @@
 		<progress id="timer" value="90" max="90" style="width: 300px;"></progress>
 		<br>
     <button id="finishButton" style="font-size: 20px; padding: 10px;">Finish</button>
+		<br>
+		<br>
+		<a href="index-sk2.html">harder version</a>
 
     <script>
       var numCircles = 10;
-			var rad = 20;
 			var sc = 1.5;
 			var maxtime = 180;
 			
@@ -66,7 +68,7 @@
       }
 
       // Create circles at random positions on left canvas without overlapping
-      for (var i=0,r=6; i < numCircles; i++,r*=1.2) {
+      for (var i=0,r=8; i < numCircles; i++,r*=1.2) {
         var x = Math.random() * leftCanvas.width;
         var y = Math.random() * leftCanvas.height;
         var color = 'black';
@@ -91,6 +93,20 @@
         rightCircles.push(circle);
         circle.draw(rightCtx);
       }
+			
+			function drawDiagonals(canvas) {
+				var ctx = canvas.getContext("2d");
+				ctx.beginPath();
+				ctx.moveTo(0, 0);
+				ctx.lineTo(canvas.width, canvas.height);
+				ctx.moveTo(canvas.width, 0);
+				ctx.lineTo(0, canvas.height);
+				ctx.strokeStyle = "gray";
+				ctx.stroke();
+			}
+			
+			drawDiagonals(leftCanvas);
+			drawDiagonals(rightCanvas);
 
       // Variables to track mouse position and whether circle is being dragged
       var mouseX;
@@ -136,6 +152,7 @@
          for (var i = 0; i < rightCircles.length; i++) {
            rightCircles[i].draw(rightCtx);
          }
+				 drawDiagonals(rightCanvas);
        }
      });
 
