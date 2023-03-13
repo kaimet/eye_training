@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Move Circles</title>
+    <title>Eye Trainer hard version</title>
   </head>
   <body>
 	  <!--<div id="timer" style="font-size: 20px;"></div> -->
@@ -22,8 +22,11 @@
 
     <script>
       var numCircles = 15;
-			var sc = 1.5;
 			var maxtime = 420;
+			
+			var maxRad = 40;
+			var fRad = 0.9
+			var sc = 1.5;
 			
 			var leftCanvas = document.getElementById("leftCanvas");
       var leftCtx = leftCanvas.getContext("2d");
@@ -68,7 +71,7 @@
       }
 
       // Create circles at random positions on left canvas without overlapping
-      for (var i=0,r=6; i < numCircles; i++,r*=1.15) {
+      for (var i=0,r=maxRad; i < numCircles; i++,r*=fRad) {
         var x = Math.random() * leftCanvas.width;
         var y = Math.random() * leftCanvas.height;
         var color = 'black';
