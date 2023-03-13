@@ -85,11 +85,18 @@
         leftCircles.push(circle);
         circle.draw(leftCtx);
         
-        // Create corresponding circle on right canvas at random position
+        // Create corresponding circle on right canvas at random position  without overlapping
         x = Math.random() * rightCanvas.width;
         y = Math.random() * rightCanvas.height;
         var color = 'black';
         circle = new Circle(x, y, r*sc, color);
+				
+				for (var u=0; u<999 && doesCircleOverlap(circle, rightCircles); u++){
+          x = Math.random() * rightCanvas.width;
+          y = Math.random() * rightCanvas.height;
+          circle.x = x;
+          circle.y = y;
+        }
         rightCircles.push(circle);
         circle.draw(rightCtx);
       }
