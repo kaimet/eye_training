@@ -27,13 +27,16 @@
 			var maxtime = 180;
 			
 			var maxRad = 40;
-			var fRad = 0.85
+			var fRad = 0.85;
 			var sc = 1.5;
 			
 			var leftCanvas = document.getElementById("leftCanvas");
       var leftCtx = leftCanvas.getContext("2d");
       var rightCanvas = document.getElementById("rightCanvas");
       var rightCtx = rightCanvas.getContext("2d");
+			
+			rightCanvas.width = leftCanvas.width * sc;
+			rightCanvas.height = leftCanvas.height * sc;
 
       // Circle object
       function Circle(x, y, r, color) {

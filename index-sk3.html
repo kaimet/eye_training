@@ -6,28 +6,27 @@
   <body>
 	  <!--<div id="timer" style="font-size: 20px;"></div> -->
 		
-    <canvas id="leftCanvas" width="300" height="300" style="border:1px solid #000000; margin-right: 100px; margin-bottom: 100px;">
+    <canvas id="leftCanvas" width="400" height="400" style="border:1px solid #000000; margin-right: 100px; margin-bottom: 100px;">
       Your browser does not support the HTML5 canvas tag.
     </canvas>
-    <canvas id="rightCanvas" width="450" height="450" style="border:1px solid #000000;">
+    <canvas id="rightCanvas" width="300" height="300" style="border:1px solid #000000;">
       Your browser does not support the HTML5 canvas tag.
     </canvas>
     <br />
-		<progress id="timer" value="90" max="90" style="width: 850px;"></progress>
+		<progress id="timer" value="90" max="90" style="width: 1050px;"></progress>
 		<br>
     <button id="finishButton" style="font-size: 20px; padding: 10px;">Finish</button>
 		<br>
 		<br>
-		<a href="index.html" style="margin-right: 20px;">easier version</a>
-		<a href="index-sk3.html">harder version</a>
+		<a href="index-sk2.html">easier version</a>
 
     <script>
-      var numCircles = 15;
-			var maxtime = 420;
+      var numCircles = 25;
+			var maxtime = 720;
 			
-			var maxRad = 40;
-			var fRad = 0.9;
-			var sc = 1.5;
+			var maxRad = 50;
+			var fRad = 0.93;
+			var sc = 1.4;
 			
 			var leftCanvas = document.getElementById("leftCanvas");
       var leftCtx = leftCanvas.getContext("2d");
