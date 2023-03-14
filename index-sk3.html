@@ -13,8 +13,8 @@
       Your browser does not support the HTML5 canvas tag.
     </canvas>
     <br />
-		<progress id="timer" value="90" max="90" style="width: 1050px;"></progress>
-		<br>
+		<!--<progress id="timer" value="90" max="90" style="width: 1050px;"></progress>
+		<br> -->
     <button id="finishButton" style="font-size: 20px; padding: 10px;">Finish</button>
 		<br>
 		<br>
@@ -22,11 +22,11 @@
 
     <script>
       var numCircles = 25;
-			var maxtime = 900;
+			//var maxtime = 900; // in sec
 			
 			var maxRad = 50;
-			var fRad = 0.93;
-			var sc = 1.4;
+			var fRad = 0.93; // smaller_circ = bigger * fRad
+			var sc = 1.4; // scale for right field and balls
 			
 			var leftCanvas = document.getElementById("leftCanvas");
       var leftCtx = leftCanvas.getContext("2d");
@@ -173,7 +173,7 @@
 						rightCircles[i].draw(rightCtx);
 					}
 			}
-
+/*
 			var timerElement = document.getElementById("timer");
 			var timeLeft = maxtime;
 			timerElement.max = maxtime
@@ -192,10 +192,10 @@
 					drawCircles();
 					isLocked=true;
 			}, maxtime*1000);
-
+*/
 			document.getElementById("finishButton").addEventListener("click", function() {
-					clearTimeout(timeoutID);
-					clearInterval(countdown);
+					/* clearTimeout(timeoutID);
+					clearInterval(countdown); */
 					drawCircles();
 					isLocked=true;
 			});
