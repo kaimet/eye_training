@@ -1,38 +1,28 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Eye Trainer</title>
+    <title>Eye Trainer hard version</title>
   </head>
   <body>
 	  <!--<div id="timer" style="font-size: 20px;"></div> -->
-		Drag the circles on the right field to match those on the left as close as you can.
-		<br>
 		
-    <canvas id="leftCanvas" width="300" height="300" style="border:1px solid #000000; margin-right: 100px; margin-bottom: 100px;">
+    <canvas id="leftCanvas" width="400" height="400" style="border:1px solid #000000; margin-right: 50px; margin-bottom: 100px;">
       Your browser does not support the HTML5 canvas tag.
     </canvas>
-    <canvas id="rightCanvas" width="450" height="450" style="border:1px solid #000000;">
+    <canvas id="rightCanvas" width="300" height="300" style="border:1px solid #000000;">
       Your browser does not support the HTML5 canvas tag.
     </canvas>
     <br />
-		<progress id="timer" value="90" max="90" style="width: 300px;"></progress>
 		<br>
-    <button id="finishButton" style="font-size: 20px; padding: 10px;">Finish</button>
-		<br>
-		<br>
-		<a href="index-sk2.html">harder version</a>
-		<br><br>
-		<a href="index-color.html">colorful version</a>
-		<br>
-		<a href="index-gray.html">shades of gray</a>
+		<a href="index-sk2.html">without color</a>
 
     <script>
-      var numCircles = 10;
-			var maxtime = 180;
+      var numCircles = 30;
+			//var maxtime = 900; // in sec
 			
 			var maxRad = 40;
-			var fRad = 0.85;
-			var sc = 1.5;
+			var fRad = 0.98; // smaller_circ = bigger * fRad
+			var sc = 1.25; // scale for right field and balls
 			
 			var leftCanvas = document.getElementById("leftCanvas");
       var leftCtx = leftCanvas.getContext("2d");
@@ -62,71 +52,25 @@
       var leftCircles = [];
       var rightCircles = [];
 
-      // Function to check if two circles overlap
-      function doCirclesOverlap(circle1, circle2) {
-        var dx = circle1.x - circle2.x;
-        var dy = circle1.y - circle2.y;
-        var distance = Math.sqrt(dx * dx + dy * dy);
-        return distance < circle1.r + circle2.r;
-      }
-
-      // Function to check if a circle overlaps with any existing circles
-      function doesCircleOverlap(circle, circles) {
-        for (var i = 0; i < circles.length; i++) {
-          if (doCirclesOverlap(circle, circles[i])) {
-            return true;
-          }
-        }
-        return false;
-      }
-
-      // Create circles at random positions on left canvas without overlapping
+      // Create circles at random positions on left canvas
       for (var i=0,r=maxRad; i < numCircles; i++,r*=fRad) {
         var x = Math.random() * leftCanvas.width;
         var y = Math.random() * leftCanvas.height;
-        var color = 'black';
+				var rd = Math.floor(Math.random() * 256);
+				var g = Math.floor(Math.random() * 256);
+				var b = Math.floor(Math.random() * 256);
+				var color = 'rgb(' + rd + ',' + g + ',' + b + ')';
         var circle = new Circle(x, y, r, color);
-        
-        // Keep generating new positions until the circle doesn't overlap with any existing circles
-        for (var u=0; u<999 && doesCircleOverlap(circle, leftCircles); u++){
-          x = Math.random() * leftCanvas.width;
-          y = Math.random() * leftCanvas.height;
-          circle.x = x;
-          circle.y = y;
-        }
-        
         leftCircles.push(circle);
         circle.draw(leftCtx);
         
-        // Create corresponding circle on right canvas at random position  without overlapping
+        // Create corresponding circle on right canvas
         x = Math.random() * rightCanvas.width;
         y = Math.random() * rightCanvas.height;
-        var color = 'black';
         circle = new Circle(x, y, r*sc, color);
-				
-				for (var u=0; u<999 && doesCircleOverlap(circle, rightCircles); u++){
-          x = Math.random() * rightCanvas.width;
-          y = Math.random() * rightCanvas.height;
-          circle.x = x;
-          circle.y = y;
-        }
         rightCircles.push(circle);
         circle.draw(rightCtx);
       }
-			
-			function drawDiagonals(canvas) {
-				var ctx = canvas.getContext("2d");
-				ctx.beginPath();
-				ctx.moveTo(0, 0);
-				ctx.lineTo(canvas.width, canvas.height);
-				ctx.moveTo(canvas.width, 0);
-				ctx.lineTo(0, canvas.height);
-				ctx.strokeStyle = "gray";
-				ctx.stroke();
-			}
-			
-			drawDiagonals(leftCanvas);
-			drawDiagonals(rightCanvas);
 
       // Variables to track mouse position and whether circle is being dragged
       var mouseX;
@@ -153,7 +97,7 @@
      // Add event listeners for mousedown,mousemove,and mouseup on the right canvas 
      rightCanvas.addEventListener("mousedown",function(e){
        if(isLocked) return;
-			 mouseX=e.clientX-rightCanvas.offsetLeft; 
+       mouseX=e.clientX-rightCanvas.offsetLeft; 
        mouseY=e.clientY-rightCanvas.offsetTop; 
        draggedCircle=getMouseOverCircle(); 
        if(draggedCircle){
@@ -164,7 +108,6 @@
      }); 
 
      rightCanvas.addEventListener("mousemove",function(e){
-			 e.preventDefault();
        if(isDragging && !isLocked){
          mouseX=e.clientX-rightCanvas.offsetLeft; 
          mouseY=e.clientY-rightCanvas.offsetTop; 
@@ -175,7 +118,6 @@
          for (var i = 0; i < rightCircles.length; i++) {
            rightCircles[i].draw(rightCtx);
          }
-				 drawDiagonals(rightCanvas);
        }
      });
 
@@ -199,6 +141,7 @@
 			});
 
 			rightCanvas.addEventListener("touchmove", function(e) {
+					e.preventDefault();
 					if (isDragging && !isLocked) {
 							var touch = e.touches[0];
 							mouseX = touch.clientX - rightCanvas.offsetLeft;
@@ -210,53 +153,13 @@
 							for (var i = 0; i < rightCircles.length; i++) {
 									rightCircles[i].draw(rightCtx);
 							}
-							drawDiagonals(rightCanvas);
 					}
 			});
 
 			rightCanvas.addEventListener("touchend", function(e) {
 					isDragging = false;
 			});
-
-
-     //finish
-		 
-     function drawCircles() {
-			// Draw left circles on right canvas in red color
-			for (var i = 0; i < leftCircles.length; i++) {
-					var circle = new Circle(leftCircles[i].x*sc, leftCircles[i].y*sc, leftCircles[i].r*sc, "red");
-					circle.draw(rightCtx);
-				}
-				for (var i = 0; i < rightCircles.length; i++) {
-						rightCircles[i].draw(rightCtx);
-					}
-			}
-
-			var timerElement = document.getElementById("timer");
-			var timeLeft = maxtime;
-			timerElement.max = maxtime
-			timerElement.value = timeLeft;
-
-			var countdown = setInterval(function() {
-					timeLeft--;
-					timerElement.value = timeLeft;
-					if (timeLeft <= 0) {
-							clearInterval(countdown);
-					}
-			}, 1000);
-
-			var timeoutID = setTimeout(function() {
-					clearInterval(countdown);
-					drawCircles();
-					isLocked=true;
-			}, maxtime*1000);
-
-			document.getElementById("finishButton").addEventListener("click", function() {
-					clearTimeout(timeoutID);
-					clearInterval(countdown);
-					drawCircles();
-					isLocked=true;
-			});
+			
     </script>
   </body>
 </html>
