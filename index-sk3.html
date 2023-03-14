@@ -47,6 +47,7 @@
           ctx.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
           ctx.fillStyle = this.color;
           ctx.fill();
+					ctx.strokeStyle = "gray";
           ctx.stroke();
         };
       }
@@ -117,7 +118,7 @@
 
       // Function to check if mouse is over a circle on the right canvas
       function getMouseOverCircle() {
-        for (var i=0; i<rightCircles.length; i++) {
+        for (var i=rightCircles.length-1; i>=0; i--) {
           var circle=rightCircles[i];
           var dx=mouseX-circle.x;
           var dy=mouseY-circle.y;
