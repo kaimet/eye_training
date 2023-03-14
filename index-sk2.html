@@ -161,6 +161,42 @@
      rightCanvas.addEventListener("mouseup", function(e) {
        isDragging = false;
      });
+		 
+		 // EventListeners for mobile
+		 
+		 rightCanvas.addEventListener("touchstart", function(e) {
+					if (isLocked) return;
+					var touch = e.touches[0];
+					mouseX = touch.clientX - rightCanvas.offsetLeft;
+					mouseY = touch.clientY - rightCanvas.offsetTop;
+					draggedCircle = getMouseOverCircle();
+					if (draggedCircle) {
+							isDragging = true;
+							dcdX = draggedCircle.x - mouseX;
+							dcdY = draggedCircle.y - mouseY;
+					}
+			});
+
+			rightCanvas.addEventListener("touchmove", function(e) {
+					e.preventDefault();
+					if (isDragging && !isLocked) {
+							var touch = e.touches[0];
+							mouseX = touch.clientX - rightCanvas.offsetLeft;
+							mouseY = touch.clientY - rightCanvas.offsetTop;
+							draggedCircle.x = mouseX + dcdX;
+							draggedCircle.y = mouseY + dcdY;
+							rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height)
+							// Redraw all circles on right canvas
+							for (var i = 0; i < rightCircles.length; i++) {
+									rightCircles[i].draw(rightCtx);
+							}
+					}
+			});
+
+			rightCanvas.addEventListener("touchend", function(e) {
+					isDragging = false;
+			});
+
 
      //finish
 		 
