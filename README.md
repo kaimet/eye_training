@@ -7,4 +7,4 @@ The interface looks like this:
 
 On the right field you need to drag all the circles to the same places as in the left field trying to make them look identical. When you press the Finish button or when time runs out all circles from the left field is drawn on the right field in red on their corresponding places, so that you can visually evaluate how close you were.
 
-There is also two more difficult versions. The last one don't have a time limit.
+There are also more difficult versions without a time limit. Also there are colorful and shades of gray versions.
