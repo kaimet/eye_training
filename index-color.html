@@ -13,6 +13,8 @@
       Your browser does not support the HTML5 canvas tag.
     </canvas>
     <br />
+    <button id="finishButton" style="font-size: 20px; padding: 10px;">Finish</button>
+		<br>
 		<br>
 		<a href="index-color2.html">harder version</a>
 		<br>
@@ -162,6 +164,23 @@
 					isDragging = false;
 			});
 			
+			
+			document.getElementById("finishButton").addEventListener("click", function() {
+					isLocked=true;
+					rightCanvas.style.borderColor = "red";
+					
+					rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
+					for (var i = 0; i < leftCircles.length; i++){
+						var circle = new Circle(leftCircles[i].x*sc, leftCircles[i].y*sc, leftCircles[i].r*sc, leftCircles[i].color);
+						circle.draw(rightCtx);
+					}
+					setTimeout(function() {
+						rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
+						for (var i = 0; i < rightCircles.length; i++){
+							rightCircles[i].draw(rightCtx);
+						}
+					}, 500);
+			});
     </script>
   </body>
 </html>

@@ -16,15 +16,15 @@
     <button id="finishButton" style="font-size: 20px; padding: 10px;">Finish</button>
 		<br>
 		<br>
-		<a href="index-color.html">easier version</a>
+		<a href="index-gray.html">easier version</a>
 		<br>
 		<a href="index-sk2.html">without color</a>
 
     <script>
-      var numCircles = 60;
+      var numCircles = 20;
 			//var maxtime = 900; // in sec
 			
-			var maxRad = 45;
+			var maxRad = 50;
 			var fRad = 0.98; // smaller_circ = bigger * fRad
 			var sc = 1.25; // scale for right field and balls
 			
@@ -60,10 +60,8 @@
       for (var i=0,r=maxRad; i < numCircles; i++,r*=fRad) {
         var x = Math.random() * leftCanvas.width;
         var y = Math.random() * leftCanvas.height;
-				var rd = Math.floor(Math.random() * 256);
-				var g = Math.floor(Math.random() * 256);
-				var b = Math.floor(Math.random() * 256);
-				var color = 'rgb(' + rd + ',' + g + ',' + b + ')';
+				var gray = Math.floor(Math.random() * 256);
+				var color = 'rgb(' + gray + ',' + gray + ',' + gray + ')';
         var circle = new Circle(x, y, r, color);
         leftCircles.push(circle);
         circle.draw(leftCtx);
