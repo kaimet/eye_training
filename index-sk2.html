@@ -27,7 +27,7 @@
 
     <script>
       var numCircles = 15;
-			var maxtime = 420;
+			var maxtime = 360;
 			
 			var maxRad = 40;
 			var fRad = 0.9;
@@ -205,14 +205,36 @@
      //finish
 		 
      function drawCircles() {
-			// Draw left circles on right canvas in red color
-			for (var i = 0; i < leftCircles.length; i++) {
+				var score = 0;
+				// Draw left circles on right canvas in red color
+				for (var i = 0; i < leftCircles.length; i++) {
 					var circle = new Circle(leftCircles[i].x*sc, leftCircles[i].y*sc, leftCircles[i].r*sc, "red");
 					circle.draw(rightCtx);
 				}
+				
+				// Draw right circles
 				for (var i = 0; i < rightCircles.length; i++) {
-						rightCircles[i].draw(rightCtx);
-					}
+					rightCircles[i].draw(rightCtx);
+					
+					// Text
+					var x1 = leftCircles[i].x*sc;
+					var y1 = leftCircles[i].y*sc;
+					var x2 = rightCircles[i].x;
+					var y2 = rightCircles[i].y;
+					var distance = Math.floor(Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2)));
+					score += distance;
+					rightCtx.font = "14px Arial";
+					var fontSize = 14;
+					rightCtx.fillStyle = "yellow";
+					var textWidth = rightCtx.measureText(distance).width;
+					rightCtx.fillText(distance, rightCircles[i].x - (textWidth / 2), rightCircles[i].y + (fontSize/2.4));
+				}
+				
+				//Score
+				rightCtx.font = "32px Arial";
+				rightCtx.fillStyle = "green";
+				var textWidth = rightCtx.measureText(score).width;
+				rightCtx.fillText(score, (rightCanvas.width / 2) - (textWidth / 2), rightCanvas.height / 2);
 			}
 
 			var timerElement = document.getElementById("timer");
