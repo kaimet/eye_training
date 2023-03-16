@@ -165,6 +165,7 @@
 			
 			document.getElementById("finishButton").addEventListener("click", function() {
 					isLocked=true;
+					var score = 0;
 					rightCanvas.style.borderColor = "red";
 					
 					rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
@@ -176,7 +177,17 @@
 						rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
 						for (var i = 0; i < rightCircles.length; i++){
 							rightCircles[i].draw(rightCtx);
+							var x1 = leftCircles[i].x*sc;
+							var y1 = leftCircles[i].y*sc;
+							var x2 = rightCircles[i].x;
+							var y2 = rightCircles[i].y;
+							var distance = Math.floor(Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2)));
+							score += distance;
 						}
+						rightCtx.font = "32px Arial";
+						rightCtx.fillStyle = "green";
+						var textWidth = rightCtx.measureText(score).width;
+						rightCtx.fillText(score, (rightCanvas.width / 2) - (textWidth / 2), rightCanvas.height / 2);
 					}, 500);
 			});
     </script>
