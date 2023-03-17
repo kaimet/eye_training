@@ -1,39 +1,33 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Eye Trainer</title>
+    <title>Eye Trainer hard version</title>
   </head>
   <body>
 	  <!--<div id="timer" style="font-size: 20px;"></div> -->
-		Drag the circles on the right field to match those on the left as close as you can.
-		<br>
 		
-    <canvas id="leftCanvas" width="300" height="300" style="border:1px solid #000000; margin-right: 100px; margin-bottom: 100px;">
+    <canvas id="leftCanvas" width="320" height="320" style="margin-right: 100px; margin-bottom: 130px;border:1px solid #ffffff;">
       Your browser does not support the HTML5 canvas tag.
     </canvas>
-    <canvas id="rightCanvas" width="450" height="450" style="border:1px solid #000000;">
+    <canvas id="rightCanvas" width="400" height="400" style="margin-top: 50px;border:1px solid #ffffff;">
       Your browser does not support the HTML5 canvas tag.
     </canvas>
     <br />
-		<progress id="timer" value="90" max="90" style="width: 300px;"></progress>
+		<progress id="timer" value="90" max="90" style="width: 850px;"></progress>
 		<br>
     <button id="finishButton" style="font-size: 20px; padding: 10px;">Finish</button>
 		<br>
 		<br>
-		<a href="index-sk2.html">harder version</a>
-		<br>
-		<a href="index-color.html" style="margin-right: 20px;">colorful version</a>
-		<a href="index-gray.html">shades of gray</a>
-		<br>
-		<a href="index-quick.html">quickie</a>
+		<a href="index.html">other versions</a>
 
     <script>
-      var numCircles = 10;
-			var maxtime = 180;
+      var numCircles = 5;
+			var nfreeCircles = 2;
+			var maxtime = 30;
 			
 			var maxRad = 40;
-			var fRad = 0.85;
-			var sc = 1.5;
+			var fRad = 0.8;
+			var sc = 1.25;
 			
 			var leftCanvas = document.getElementById("leftCanvas");
       var leftCtx = leftCanvas.getContext("2d");
@@ -83,51 +77,54 @@
 
       // Create circles at random positions on left canvas without overlapping
       for (var i=0,r=maxRad; i < numCircles; i++,r*=fRad) {
-        var x = Math.random() * leftCanvas.width;
-        var y = Math.random() * leftCanvas.height;
+				//var r = (Math.random() + 1) * maxRad/2
+        var x = Math.random() * (leftCanvas.width-r*2) + r;
+        var y = Math.random() * (leftCanvas.height-r*2) + r;
         var color = 'black';
         var circle = new Circle(x, y, r, color);
         
         // Keep generating new positions until the circle doesn't overlap with any existing circles
         for (var u=0; u<999 && doesCircleOverlap(circle, leftCircles); u++){
-          x = Math.random() * leftCanvas.width;
-          y = Math.random() * leftCanvas.height;
+          var x = Math.random() * (leftCanvas.width-r*2) + r;
+          var y = Math.random() * (leftCanvas.height-r*2) + r;
           circle.x = x;
           circle.y = y;
         }
         
         leftCircles.push(circle);
         circle.draw(leftCtx);
+				if(i<numCircles-nfreeCircles){
+					var circ = new Circle(x, y, 5, 'white');
+					circ.draw(leftCtx);
+				}
         
-        // Create corresponding circle on right canvas at random position  without overlapping
-        x = Math.random() * rightCanvas.width;
-        y = Math.random() * rightCanvas.height;
+				rr=r*sc;
+				if (i < numCircles-nfreeCircles){
+					x=x*sc;
+					y=y*sc;
+				}else{
+					x = Math.random() * (rightCanvas.width-rr*2)+rr;
+					y = Math.random() * (rightCanvas.height-rr*2)+rr;
+				}
         var color = 'black';
-        circle = new Circle(x, y, r*sc, color);
+        circle = new Circle(x, y, rr, color);
 				
-				for (var u=0; u<999 && doesCircleOverlap(circle, rightCircles); u++){
-          x = Math.random() * rightCanvas.width;
-          y = Math.random() * rightCanvas.height;
-          circle.x = x;
-          circle.y = y;
-        }
+				if (i >= numCircles-nfreeCircles){
+					for (var u=0; u<999 && doesCircleOverlap(circle, rightCircles); u++){
+						x = Math.random() * (rightCanvas.width-rr*2)+rr;
+						y = Math.random() * (rightCanvas.height-rr*2)+rr;
+						circle.x = x;
+						circle.y = y;
+					}
+				}
+				
         rightCircles.push(circle);
         circle.draw(rightCtx);
+				if(i<numCircles-nfreeCircles){
+					var circ = new Circle(x, y, 5, 'white');
+					circ.draw(rightCtx);
+				}
       }
-			
-			function drawDiagonals(canvas) {
-				var ctx = canvas.getContext("2d");
-				ctx.beginPath();
-				ctx.moveTo(0, 0);
-				ctx.lineTo(canvas.width, canvas.height);
-				ctx.moveTo(canvas.width, 0);
-				ctx.lineTo(0, canvas.height);
-				ctx.strokeStyle = "gray";
-				ctx.stroke();
-			}
-			
-			drawDiagonals(leftCanvas);
-			drawDiagonals(rightCanvas);
 
       // Variables to track mouse position and whether circle is being dragged
       var mouseX;
@@ -139,7 +136,7 @@
 
       // Function to check if mouse is over a circle on the right canvas
       function getMouseOverCircle() {
-        for (var i=rightCircles.length-1; i>=0; i--) {
+        for (var i=rightCircles.length-1; i>=numCircles-nfreeCircles; i--) {
           var circle=rightCircles[i];
           var dx=mouseX-circle.x;
           var dy=mouseY-circle.y;
@@ -154,7 +151,7 @@
      // Add event listeners for mousedown,mousemove,and mouseup on the right canvas 
      rightCanvas.addEventListener("mousedown",function(e){
        if(isLocked) return;
-			 mouseX=e.clientX-rightCanvas.offsetLeft; 
+       mouseX=e.clientX-rightCanvas.offsetLeft; 
        mouseY=e.clientY-rightCanvas.offsetTop; 
        draggedCircle=getMouseOverCircle(); 
        if(draggedCircle){
@@ -165,7 +162,6 @@
      }); 
 
      rightCanvas.addEventListener("mousemove",function(e){
-			 e.preventDefault();
        if(isDragging && !isLocked){
          mouseX=e.clientX-rightCanvas.offsetLeft; 
          mouseY=e.clientY-rightCanvas.offsetTop; 
@@ -174,9 +170,12 @@
          rightCtx.clearRect(0,0,rightCanvas.width,rightCanvas.height)
          // Redraw all circles on right canvas
          for (var i = 0; i < rightCircles.length; i++) {
-           rightCircles[i].draw(rightCtx);
+						rightCircles[i].draw(rightCtx);
+						if(i<numCircles-nfreeCircles){
+							var circ = new Circle(rightCircles[i].x, rightCircles[i].y, 5, 'white');
+							circ.draw(rightCtx);
+						}
          }
-				 drawDiagonals(rightCanvas);
        }
      });
 
@@ -200,6 +199,7 @@
 			});
 
 			rightCanvas.addEventListener("touchmove", function(e) {
+					e.preventDefault();
 					if (isDragging && !isLocked) {
 							var touch = e.touches[0];
 							mouseX = touch.clientX - rightCanvas.offsetLeft;
@@ -210,8 +210,11 @@
 							// Redraw all circles on right canvas
 							for (var i = 0; i < rightCircles.length; i++) {
 									rightCircles[i].draw(rightCtx);
+									if(i<numCircles-nfreeCircles){
+										var circ = new Circle(rightCircles[i].x, rightCircles[i].y, 5, 'white');
+										circ.draw(rightCtx);
+									}
 							}
-							drawDiagonals(rightCanvas);
 					}
 			});
 
@@ -233,19 +236,25 @@
 				// Draw right circles
 				for (var i = 0; i < rightCircles.length; i++) {
 					rightCircles[i].draw(rightCtx);
+					if(i<numCircles-nfreeCircles){
+						var circ = new Circle(rightCircles[i].x, rightCircles[i].y, 5, 'white');
+						circ.draw(rightCtx);
+					}
 					
 					// Text
-					var x1 = leftCircles[i].x*sc;
-					var y1 = leftCircles[i].y*sc;
-					var x2 = rightCircles[i].x;
-					var y2 = rightCircles[i].y;
-					var distance = Math.floor(Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2)));
-					score += distance;
-					rightCtx.font = "14px Arial";
-					var fontSize = 14;
-					rightCtx.fillStyle = "yellow";
-					var textWidth = rightCtx.measureText(distance).width;
-					rightCtx.fillText(distance, rightCircles[i].x - (textWidth / 2), rightCircles[i].y + (fontSize/2.4));
+					if(i>=numCircles-nfreeCircles){
+						var x1 = leftCircles[i].x*sc;
+						var y1 = leftCircles[i].y*sc;
+						var x2 = rightCircles[i].x;
+						var y2 = rightCircles[i].y;
+						var distance = Math.floor(Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2)));
+						score += distance;
+						rightCtx.font = "14px Arial";
+						var fontSize = 14;
+						rightCtx.fillStyle = "yellow";
+						var textWidth = rightCtx.measureText(distance).width;
+						rightCtx.fillText(distance, rightCircles[i].x - (textWidth / 2), rightCircles[i].y + (fontSize/2.4));
+					}
 				}
 				
 				//Score
