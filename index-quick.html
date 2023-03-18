@@ -242,6 +242,10 @@
 					}
 					
 					// Text
+					rightCtx.font = "14px Arial";
+					rightCtx.textAlign = 'center';
+					var fontSize = 14;
+					rightCtx.fillStyle = "yellow";
 					if(i>=numCircles-nfreeCircles){
 						var x1 = leftCircles[i].x*sc;
 						var y1 = leftCircles[i].y*sc;
@@ -249,19 +253,22 @@
 						var y2 = rightCircles[i].y;
 						var distance = Math.floor(Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2)));
 						score += distance;
-						rightCtx.font = "14px Arial";
-						var fontSize = 14;
-						rightCtx.fillStyle = "yellow";
-						var textWidth = rightCtx.measureText(distance).width;
-						rightCtx.fillText(distance, rightCircles[i].x - (textWidth / 2), rightCircles[i].y + (fontSize/2.4));
+						//var textWidth = rightCtx.measureText(distance).width;
+						//rightCtx.fillText(distance, rightCircles[i].x - (textWidth / 2), rightCircles[i].y + (fontSize/2.4));
+						rightCtx.fillText(distance, rightCircles[i].x, rightCircles[i].y + 5);
 					}
 				}
 				
 				//Score
 				rightCtx.font = "32px Arial";
-				rightCtx.fillStyle = "green";
-				var textWidth = rightCtx.measureText(score).width;
-				rightCtx.fillText(score, (rightCanvas.width / 2) - (textWidth / 2), rightCanvas.height / 2);
+				rightCtx.textAlign = 'center';
+				rightCtx.fillStyle = "darkblue";
+				rightCtx.fillText('\u2588'.repeat(score.toString().length), rightCanvas.width/2, rightCanvas.height/2);
+				rightCtx.fillStyle = 'yellow';
+				rightCtx.fillText(score, rightCanvas.width/2, rightCanvas.height/2);
+				
+				//var textWidth = rightCtx.measureText(score).width;
+				//rightCtx.fillText(score, (rightCanvas.width / 2) - (textWidth / 2), rightCanvas.height / 2);
 			}
 
 			var timerElement = document.getElementById("timer");
