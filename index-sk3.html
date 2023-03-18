@@ -16,6 +16,7 @@
 		<!--<progress id="timer" value="90" max="90" style="width: 1050px;"></progress>
 		<br> -->
     <button id="finishButton" style="font-size: 20px; padding: 10px;">Finish</button>
+    <button id="checkButton" style="font-size: 14px; padding: 10px;">Check big errors</button>
 		<br>
 		<br>
 		<a href="index-sk2.html" style="margin-right: 20px;">easier version</a>
@@ -205,63 +206,65 @@
      //finish
 		 
      function drawCircles() {
-				var score = 0;
 				// Draw left circles on right canvas in red color
-				for (var i = 0; i < leftCircles.length; i++) {
-					var circle = new Circle(leftCircles[i].x*sc, leftCircles[i].y*sc, leftCircles[i].r*sc, "red");
-					circle.draw(rightCtx);
+				if(isLocked){
+					for (var i = 0; i < leftCircles.length; i++) {
+						var circle = new Circle(leftCircles[i].x*sc, leftCircles[i].y*sc, leftCircles[i].r*sc, "red");
+						circle.draw(rightCtx);
+					}
 				}
+				
+				var distances = [];
+				var score = 0;
+				for (var i = 0; i < rightCircles.length; i++) {
+					var x1 = leftCircles[i].x*sc;
+					var y1 = leftCircles[i].y*sc;
+					var x2 = rightCircles[i].x;
+					var y2 = rightCircles[i].y;
+					distances[i] = Math.floor(Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2)));
+					score += distances[i];
+				}
+				var mean = score / numCircles;
+				var errcutoff = mean * 2;
 				
 				// Draw right circles
 				for (var i = 0; i < rightCircles.length; i++) {
 					rightCircles[i].draw(rightCtx);
 					
-					// Text
-					var x1 = leftCircles[i].x*sc;
-					var y1 = leftCircles[i].y*sc;
-					var x2 = rightCircles[i].x;
-					var y2 = rightCircles[i].y;
-					var distance = Math.floor(Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2)));
-					score += distance;
-					rightCtx.font = "14px Arial";
-					var fontSize = 14;
-					rightCtx.fillStyle = "yellow";
-					var textWidth = rightCtx.measureText(distance).width;
-					rightCtx.fillText(distance, rightCircles[i].x - (textWidth / 2), rightCircles[i].y + (fontSize/2.4));
+					if(isLocked){
+						// Text
+						rightCtx.font = "14px Arial";
+						rightCtx.textAlign = 'center';
+						var fontSize = 14;
+						rightCtx.fillStyle = "yellow";
+						rightCtx.fillText(distances[i], rightCircles[i].x, rightCircles[i].y + 5);
+					} else if (distances[i] > errcutoff) {
+						var circle = new Circle(rightCircles[i].x, rightCircles[i].y, rightCircles[i].r, "red");
+						circle.draw(rightCtx);
+					}
 				}
 				
-				//Score
-				rightCtx.font = "32px Arial";
-				rightCtx.fillStyle = "green";
-				var textWidth = rightCtx.measureText(score).width;
-				rightCtx.fillText(score, (rightCanvas.width / 2) - (textWidth / 2), rightCanvas.height / 2);
+				if(isLocked){
+					//Score
+					rightCtx.font = "32px Arial";
+					rightCtx.textAlign = 'center';
+					rightCtx.fillStyle = "darkblue";
+					rightCtx.fillText('\u2588'.repeat(score.toString().length), rightCanvas.width/2, rightCanvas.height/2);
+					rightCtx.fillStyle = 'yellow';
+					rightCtx.fillText(score, rightCanvas.width/2, rightCanvas.height/2);
+				}
 			}
-/*
-			var timerElement = document.getElementById("timer");
-			var timeLeft = maxtime;
-			timerElement.max = maxtime
-			timerElement.value = timeLeft;
-
-			var countdown = setInterval(function() {
-					timeLeft--;
-					timerElement.value = timeLeft;
-					if (timeLeft <= 0) {
-							clearInterval(countdown);
-					}
-			}, 1000);
-
-			var timeoutID = setTimeout(function() {
-					clearInterval(countdown);
-					drawCircles();
-					isLocked=true;
-			}, maxtime*1000);
-*/
+			
+			
 			document.getElementById("finishButton").addEventListener("click", function() {
-					/* clearTimeout(timeoutID);
-					clearInterval(countdown); */
-					drawCircles();
 					isLocked=true;
+					drawCircles();
 			});
+			
+			document.getElementById("checkButton").addEventListener("click", function() {
+					drawCircles();
+			});
+			
     </script>
   </body>
 </html>
