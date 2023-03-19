@@ -6,7 +6,7 @@
   <body>
 	  <!--<div id="timer" style="font-size: 20px;"></div> -->
 		
-    <canvas id="leftCanvas" width="300" height="300" style="border:1px solid #000000; margin-right: 100px; margin-bottom: 100px;">
+    <canvas id="leftCanvas" width="360" height="360" style="border:1px solid #000000; margin-right: 50px; margin-bottom: 50px;">
       Your browser does not support the HTML5 canvas tag.
     </canvas>
     <canvas id="rightCanvas" width="450" height="450" style="border:1px solid #000000;">
@@ -21,8 +21,7 @@
 		<a href="index.html" style="margin-right: 20px;">easier version</a>
 		<a href="index-sk3.html">harder version</a>
 		<br><br>
-		<a href="index-color.html">colorful version</a>
-		<br>
+		<a href="index-color.html" style="margin-right: 20px;">colorful version</a>
 		<a href="index-gray.html">shades of gray</a>
 
     <script>
@@ -31,7 +30,7 @@
 			
 			var maxRad = 40;
 			var fRad = 0.9;
-			var sc = 1.5;
+			var sc = 1.25;
 			
 			var leftCanvas = document.getElementById("leftCanvas");
       var leftCtx = leftCanvas.getContext("2d");
@@ -65,8 +64,9 @@
       function doCirclesOverlap(circle1, circle2) {
         var dx = circle1.x - circle2.x;
         var dy = circle1.y - circle2.y;
-        var distance = Math.sqrt(dx * dx + dy * dy);
-        return distance < circle1.r + circle2.r;
+        var distance2 = dx * dx + dy * dy;
+				var r2 = circle1.r + circle2.r;
+        return distance2 < r2 * r2;
       }
 
       // Function to check if a circle overlaps with any existing circles
@@ -232,9 +232,11 @@
 				
 				//Score
 				rightCtx.font = "32px Arial";
-				rightCtx.fillStyle = "green";
-				var textWidth = rightCtx.measureText(score).width;
-				rightCtx.fillText(score, (rightCanvas.width / 2) - (textWidth / 2), rightCanvas.height / 2);
+				rightCtx.textAlign = 'center';
+				rightCtx.fillStyle = "darkblue";
+				rightCtx.fillText('\u2588'.repeat(score.toString().length), rightCanvas.width/2, rightCanvas.height/2);
+				rightCtx.fillStyle = 'yellow';
+				rightCtx.fillText(score, rightCanvas.width/2, rightCanvas.height/2);
 			}
 
 			var timerElement = document.getElementById("timer");

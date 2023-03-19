@@ -6,26 +6,24 @@
   <body>
 	  <!--<div id="timer" style="font-size: 20px;"></div> -->
 		
-    <canvas id="leftCanvas" width="400" height="400" style="border:1px solid #000000; margin-right: 50px; margin-bottom: 100px;">
+    <canvas id="leftCanvas" width="360" height="360" style="margin-right: 50px; margin-bottom: 130px;border:1px solid #000000;">
       Your browser does not support the HTML5 canvas tag.
     </canvas>
-    <canvas id="rightCanvas" width="300" height="300" style="border:1px solid #000000;">
+    <canvas id="rightCanvas" width="400" height="400" style="margin-top: 50px;border:1px solid #000000;">
       Your browser does not support the HTML5 canvas tag.
     </canvas>
     <br />
     <button id="finishButton" style="font-size: 20px; padding: 10px;">Finish</button>
 		<br>
 		<br>
-		<a href="index-gray2.html">harder version</a>
-		<br>
-		<a href="index-sk2.html">without color</a>
+		<a href="index.html">main page</a>
 
     <script>
-      var numCircles = 10;
+      var numCircles = 15;
 			//var maxtime = 900; // in sec
 			
-			var maxRad = 50;
-			var fRad = 0.98; // smaller_circ = bigger * fRad
+			var maxRad = 120;
+			var fRad = 0.93; // smaller_circ = bigger * fRad
 			var sc = 1.25; // scale for right field and balls
 			
 			var leftCanvas = document.getElementById("leftCanvas");
@@ -42,6 +40,8 @@
         this.y = y;
         this.r = r;
         this.color = color;
+				//this.freespot_x = 0;
+				//this.freespot_y = 0;
         this.draw = function(ctx) {
           ctx.beginPath();
           ctx.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
@@ -55,17 +55,50 @@
       // Array of circles for left and right canvases
       var leftCircles = [];
       var rightCircles = [];
+			var freeSpots = [];
 
+      // Function to check if two circles overlap
+      function doCirclesOverlap(circle1, circle2) {
+        var dx = circle1.x - circle2.x;
+        var dy = circle1.y - circle2.y;
+        var distance2 = dx * dx + dy * dy;
+				var r2 = circle1.r + circle2.r;
+        return distance2 < r2 * r2;
+      }
+
+      // Function to check if a circle overlaps with any existing circles
+      function doesCircleOverlap(circle, circles) {
+        for (var i = 0; i < circles.length; i++) {
+          if (doCirclesOverlap(circle, circles[i])) {
+            return true;
+          }
+        }
+        return false;
+      }
+			
       // Create circles at random positions on left canvas
       for (var i=0,r=maxRad; i < numCircles; i++,r*=fRad) {
-        var x = Math.random() * leftCanvas.width;
-        var y = Math.random() * leftCanvas.height;
-				var gray = Math.floor(Math.random() * 256);
-				var color = 'rgb(' + gray + ',' + gray + ',' + gray + ')';
-        var circle = new Circle(x, y, r, color);
+				let c = Math.random()*255;
+				let color = `rgb(${c}, ${c}, ${c})`;
+				var spot = new Circle(0, 0, 5, color);
+				var circle = new Circle(0, 0, r, color);
+				
+        for (var u=0, ovl=true; u<999 && ovl; u++){
+					spot.x = Math.random() * leftCanvas.width;
+					spot.y = Math.random() * leftCanvas.height;
+					ovl = doesCircleOverlap(spot, freeSpots);
+					if(!ovl){
+						let angle = Math.random() * Math.PI * 2;
+						circle.x = spot.x + (r-5) * Math.cos(angle);
+						circle.y = spot.y + (r-5) * Math.sin(angle);
+						ovl = doesCircleOverlap(circle, freeSpots);
+					}
+        }
+				
+        freeSpots.push(spot);
         leftCircles.push(circle);
         circle.draw(leftCtx);
-        
+				
         // Create corresponding circle on right canvas
         x = Math.random() * rightCanvas.width;
         y = Math.random() * rightCanvas.height;
@@ -73,6 +106,7 @@
         rightCircles.push(circle);
         circle.draw(rightCtx);
       }
+			
 
       // Variables to track mouse position and whether circle is being dragged
       var mouseX;
@@ -173,6 +207,7 @@
 						var circle = new Circle(leftCircles[i].x*sc, leftCircles[i].y*sc, leftCircles[i].r*sc, leftCircles[i].color);
 						circle.draw(rightCtx);
 					}
+					
 					setTimeout(function() {
 						rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
 						for (var i = 0; i < rightCircles.length; i++){
@@ -184,10 +219,14 @@
 							var distance = Math.floor(Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2)));
 							score += distance;
 						}
+						
+						//Score
 						rightCtx.font = "32px Arial";
-						rightCtx.fillStyle = "green";
-						var textWidth = rightCtx.measureText(score).width;
-						rightCtx.fillText(score, (rightCanvas.width / 2) - (textWidth / 2), rightCanvas.height / 2);
+						rightCtx.textAlign = 'center';
+						rightCtx.fillStyle = "darkblue";
+						rightCtx.fillText('\u2588'.repeat(score.toString().length), rightCanvas.width/2, rightCanvas.height/2);
+						rightCtx.fillStyle = 'yellow';
+						rightCtx.fillText(score, rightCanvas.width/2, rightCanvas.height/2);
 					}, 500);
 			});
     </script>

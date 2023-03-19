@@ -5,10 +5,10 @@
   </head>
   <body>
 	  <!--<div id="timer" style="font-size: 20px;"></div> -->
-		Drag the circles on the right field to match those on the left as close as you can.
+		Drag the circles on the right field so they match those on the left.
 		<br>
 		
-    <canvas id="leftCanvas" width="300" height="300" style="border:1px solid #000000; margin-right: 100px; margin-bottom: 100px;">
+    <canvas id="leftCanvas" width="320" height="320" style="border:1px solid #000000; margin-right: 100px; margin-bottom: 100px;">
       Your browser does not support the HTML5 canvas tag.
     </canvas>
     <canvas id="rightCanvas" width="450" height="450" style="border:1px solid #000000;">
@@ -19,8 +19,6 @@
 		<br>
     <button id="finishButton" style="font-size: 20px; padding: 10px;">Finish</button>
 		<br>
-		<br>
-		<a href="index-sk2.html">harder version</a>
 		<br>
 		<a href="index-color.html" style="margin-right: 20px;">colorful version</a>
 		<a href="index-gray.html">shades of gray</a>
@@ -33,7 +31,7 @@
 			
 			var maxRad = 40;
 			var fRad = 0.85;
-			var sc = 1.5;
+			var sc = 1.25;
 			
 			var leftCanvas = document.getElementById("leftCanvas");
       var leftCtx = leftCanvas.getContext("2d");
@@ -126,8 +124,8 @@
 				ctx.stroke();
 			}
 			
-			drawDiagonals(leftCanvas);
-			drawDiagonals(rightCanvas);
+			//drawDiagonals(leftCanvas);
+			//drawDiagonals(rightCanvas);
 
       // Variables to track mouse position and whether circle is being dragged
       var mouseX;
@@ -176,7 +174,7 @@
          for (var i = 0; i < rightCircles.length; i++) {
            rightCircles[i].draw(rightCtx);
          }
-				 drawDiagonals(rightCanvas);
+				 //drawDiagonals(rightCanvas);
        }
      });
 
@@ -211,7 +209,7 @@
 							for (var i = 0; i < rightCircles.length; i++) {
 									rightCircles[i].draw(rightCtx);
 							}
-							drawDiagonals(rightCanvas);
+							//drawDiagonals(rightCanvas);
 					}
 			});
 
@@ -250,9 +248,11 @@
 				
 				//Score
 				rightCtx.font = "32px Arial";
-				rightCtx.fillStyle = "green";
-				var textWidth = rightCtx.measureText(score).width;
-				rightCtx.fillText(score, (rightCanvas.width / 2) - (textWidth / 2), rightCanvas.height / 2);
+				rightCtx.textAlign = 'center';
+				rightCtx.fillStyle = "darkblue";
+				rightCtx.fillText('\u2588'.repeat(score.toString().length), rightCanvas.width/2, rightCanvas.height/2);
+				rightCtx.fillStyle = 'yellow';
+				rightCtx.fillText(score, rightCanvas.width/2, rightCanvas.height/2);
 			}
 
 			var timerElement = document.getElementById("timer");
