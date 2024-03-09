@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Eye Trainer hard version</title>
+  </head>
+  <body>
+	  <!--<div id="timer" style="font-size: 20px;"></div> -->
+		
+    <canvas id="leftCanvas" width="320" height="320" style="margin-right: 100px; margin-bottom: 130px;border:1px solid #ffffff;">
+      Your browser does not support the HTML5 canvas tag.
+    </canvas>
+    <canvas id="rightCanvas" width="400" height="400" style="margin-top: 50px;border:1px solid #ffffff;">
+      Your browser does not support the HTML5 canvas tag.
+    </canvas>
+    <br />
+		<progress id="timer" value="90" max="90" style="width: 850px;"></progress>
+		<br>
+    <button id="finishButton" style="font-size: 20px; padding: 10px;">Finish</button>
+		<br>
+		<br>
+		<a href="index.html">main page</a>
+
+    <script>
+var numCircles = 9;
+var nfreeCircles = 4;
+var maxtime = 100;
+
+var maxRad = 32;
+var fRad = 0.75;
+var sc = 1.25;
+
+var leftCanvas = document.getElementById("leftCanvas");
+var leftCtx = leftCanvas.getContext("2d");
+var rightCanvas = document.getElementById("rightCanvas");
+var rightCtx = rightCanvas.getContext("2d");
+
+rightCanvas.width = leftCanvas.width * sc;
+rightCanvas.height = leftCanvas.height * sc;
+
+// Circle object
+function Circle(x, y, r, color) {
+	this.x = x;
+	this.y = y;
+	this.r = r;
+	this.color = color;
+	this.draw = function(ctx) {
+		ctx.beginPath();
+		ctx.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
+		ctx.fillStyle = this.color;
+		ctx.fill();
+		ctx.strokeStyle = "gray";
+		ctx.stroke();
+	};
+}
+
+// Array of circles for left and right canvases
+var leftCircles = [];
+var rightCircles = [];
+var rotang = Math.random() * 0.3 + 0.1
+if (Math.random() > 0.5) rotang *= -1
+
+// Function to check if two circles overlap
+function doCirclesOverlap(circle1, circle2) {
+	var dx = circle1.x - circle2.x;
+	var dy = circle1.y - circle2.y;
+	var distance = Math.sqrt(dx * dx + dy * dy);
+	return distance < circle1.r + circle2.r;
+}
+
+// Function to check if a circle overlaps with any existing circles
+function doesCircleOverlap(circle, circles) {
+	for (var i = 0; i < circles.length; i++) {
+		if (doCirclesOverlap(circle, circles[i])) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Create circles at random positions on left canvas without overlapping
+for (var i=0,r=maxRad; i < numCircles; i++,r*=fRad) {
+	if(i == numCircles-nfreeCircles)
+		r = maxRad
+	var x = Math.random() * (leftCanvas.width-r*2-44)+r+22;
+	var y = Math.random() * (leftCanvas.height-r*2-44)+r+22;
+	var color = i<numCircles-nfreeCircles ? 'black' : 'darkblue';
+	var circle = new Circle(x, y, r, color);
+	
+	// Keep generating new positions until the circle doesn't overlap with any existing circles
+	for (var u=0; u<999 && doesCircleOverlap(circle, leftCircles); u++){
+		var x = Math.random() * (leftCanvas.width-r*2-44)+r+22;
+		var y = Math.random() * (leftCanvas.height-r*2-44)+r+22;
+		circle.x = x;
+		circle.y = y;
+	}
+	
+	leftCircles.push(circle);
+	circle.draw(leftCtx);
+	if(i<numCircles-nfreeCircles){
+		var circ = new Circle(x, y, 5, 'white');
+		circ.draw(leftCtx);
+	}
+	
+	rr=r*sc;
+	if (i < numCircles-nfreeCircles){
+		var p = rotatePoint(x,y,rotang)
+		x = p[0]
+		y = p[1]
+		x=x*sc;
+		y=y*sc;
+	}else{
+		x = Math.random() * (rightCanvas.width-rr*2)+rr;
+		y = Math.random() * (rightCanvas.height-rr*2)+rr;
+	}
+	var color = i<numCircles-nfreeCircles ? 'black' : 'darkblue';
+	circle = new Circle(x, y, rr, color);
+	
+	if (i >= numCircles-nfreeCircles){
+		for (var u=0; u<999 && doesCircleOverlap(circle, rightCircles); u++){
+			x = Math.random() * (rightCanvas.width-rr*2)+rr;
+			y = Math.random() * (rightCanvas.height-rr*2)+rr;
+			circle.x = x;
+			circle.y = y;
+		}
+	}
+	
+	rightCircles.push(circle);
+	circle.draw(rightCtx);
+	if(i<numCircles-nfreeCircles){
+		var circ = new Circle(x, y, 5, 'white');
+		circ.draw(rightCtx);
+	}
+}
+
+function rotatePoint(x, y, angle) {
+	var cx = leftCanvas.width/2;
+	var cy = leftCanvas.height/2;
+	var cos = Math.cos(angle);
+	var sin = Math.sin(angle);
+	var nx = (cos * (x - cx)) - (sin * (y - cy)) + cx;
+	var ny = (sin * (x - cx)) + (cos * (y - cy)) + cy;
+	return [nx, ny];
+}
+
+function rotatePoint2(pt, angle) {
+	var x = pt.x
+	var y = pt.y
+	var cx = leftCanvas.width/2;
+	var cy = leftCanvas.height/2;
+	var cos = Math.cos(angle);
+	var sin = Math.sin(angle);
+	pt.x = (cos * (x - cx)) - (sin * (y - cy)) + cx;
+	pt.y = (sin * (x - cx)) + (cos * (y - cy)) + cy;
+}
+
+
+// Variables to track mouse position and whether circle is being dragged
+var mouseX;
+var mouseY;
+var isDragging = false;
+var draggedCircle;
+var dcdX, dcdY;
+var isLocked = false;
+
+// Function to check if mouse is over a circle on the right canvas
+function getMouseOverCircle() {
+	for (var i=rightCircles.length-1; i>=numCircles-nfreeCircles; i--) {
+		var circle=rightCircles[i];
+		var dx=mouseX-circle.x;
+		var dy=mouseY-circle.y;
+		if (dx*dx+dy*dy<circle.r*circle.r) {
+			return circle;
+		}
+	}
+	
+ return null; 
+}
+
+// Add event listeners for mousedown,mousemove,and mouseup on the right canvas 
+rightCanvas.addEventListener("mousedown",function(e){
+ if(isLocked) return;
+ mouseX=e.clientX-rightCanvas.offsetLeft; 
+ mouseY=e.clientY-rightCanvas.offsetTop; 
+ draggedCircle=getMouseOverCircle(); 
+ if(draggedCircle){
+	 isDragging=true; 
+	 dcdX=draggedCircle.x-mouseX;
+	 dcdY=draggedCircle.y-mouseY;
+ } 
+}); 
+
+rightCanvas.addEventListener("mousemove",function(e){
+ if(isDragging && !isLocked){
+	 mouseX=e.clientX-rightCanvas.offsetLeft; 
+	 mouseY=e.clientY-rightCanvas.offsetTop; 
+	 draggedCircle.x=mouseX + dcdX; 
+	 draggedCircle.y=mouseY + dcdY; 
+	 rightCtx.clearRect(0,0,rightCanvas.width,rightCanvas.height)
+	 // Redraw all circles on right canvas
+	 for (var i = 0; i < rightCircles.length; i++) {
+			rightCircles[i].draw(rightCtx);
+			if(i<numCircles-nfreeCircles){
+				var circ = new Circle(rightCircles[i].x, rightCircles[i].y, 5, 'white');
+				circ.draw(rightCtx);
+			}
+	 }
+ }
+});
+
+rightCanvas.addEventListener("mouseup", function(e) {
+ isDragging = false;
+});
+
+// EventListeners for mobile
+
+rightCanvas.addEventListener("touchstart", function(e) {
+		if (isLocked) return;
+		var touch = e.touches[0];
+		mouseX = touch.clientX - rightCanvas.offsetLeft;
+		mouseY = touch.clientY - rightCanvas.offsetTop;
+		draggedCircle = getMouseOverCircle();
+		if (draggedCircle) {
+				isDragging = true;
+				dcdX = draggedCircle.x - mouseX;
+				dcdY = draggedCircle.y - mouseY;
+		}
+});
+
+rightCanvas.addEventListener("touchmove", function(e) {
+		e.preventDefault();
+		if (isDragging && !isLocked) {
+				var touch = e.touches[0];
+				mouseX = touch.clientX - rightCanvas.offsetLeft;
+				mouseY = touch.clientY - rightCanvas.offsetTop;
+				draggedCircle.x = mouseX + dcdX;
+				draggedCircle.y = mouseY + dcdY;
+				rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height)
+				// Redraw all circles on right canvas
+				for (var i = 0; i < rightCircles.length; i++) {
+						rightCircles[i].draw(rightCtx);
+						if(i<numCircles-nfreeCircles){
+							var circ = new Circle(rightCircles[i].x, rightCircles[i].y, 5, 'white');
+							circ.draw(rightCtx);
+						}
+				}
+		}
+});
+
+rightCanvas.addEventListener("touchend", function(e) {
+		isDragging = false;
+});
+
+
+//finish
+
+function drawCircles() {
+	var score = 0;
+	// Draw left circles on right canvas in red color
+	for (var i = 0; i < leftCircles.length; i++) {
+		var p = rotatePoint(leftCircles[i].x,leftCircles[i].y,rotang)
+		var x = p[0]*sc;
+		var y = p[1]*sc;
+		var circle = new Circle(x, y, leftCircles[i].r*sc, "red");
+		circle.draw(rightCtx);
+	}
+	
+	// Draw right circles
+	for (var i = 0; i < rightCircles.length; i++) {
+		rightCircles[i].draw(rightCtx);
+		if(i<numCircles-nfreeCircles){
+			var circ = new Circle(rightCircles[i].x, rightCircles[i].y, 5, 'white');
+			circ.draw(rightCtx);
+		}
+		
+		// Text
+		rightCtx.font = "14px Arial";
+		rightCtx.textAlign = 'center';
+		var fontSize = 14;
+		rightCtx.fillStyle = "yellow";
+		if(i>=numCircles-nfreeCircles){
+			var p = rotatePoint(leftCircles[i].x,leftCircles[i].y,rotang)
+			var x1 = p[0]*sc;
+			var y1 = p[1]*sc;
+			var x2 = rightCircles[i].x;
+			var y2 = rightCircles[i].y;
+			var distance = Math.floor(Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2)));
+			score += distance;
+			//var textWidth = rightCtx.measureText(distance).width;
+			//rightCtx.fillText(distance, rightCircles[i].x - (textWidth / 2), rightCircles[i].y + (fontSize/2.4));
+			rightCtx.fillText(distance, rightCircles[i].x, rightCircles[i].y + 5);
+		}
+	}
+	
+	//Score
+	rightCtx.font = "32px Arial";
+	rightCtx.textAlign = 'center';
+	rightCtx.fillStyle = "darkblue";
+	rightCtx.fillText('\u2588'.repeat(score.toString().length), rightCanvas.width/2, rightCanvas.height/2);
+	rightCtx.fillStyle = 'yellow';
+	rightCtx.fillText(score, rightCanvas.width/2, rightCanvas.height/2);
+	
+	//var textWidth = rightCtx.measureText(score).width;
+	//rightCtx.fillText(score, (rightCanvas.width / 2) - (textWidth / 2), rightCanvas.height / 2);
+}
+
+var timerElement = document.getElementById("timer");
+var timeLeft = maxtime;
+timerElement.max = maxtime
+timerElement.value = timeLeft;
+
+var countdown = setInterval(function() {
+		timeLeft--;
+		timerElement.value = timeLeft;
+		if (timeLeft <= 0) {
+				clearInterval(countdown);
+		}
+}, 1000);
+
+var timeoutID = setTimeout(function() {
+		clearInterval(countdown);
+		drawCircles();
+		isLocked=true;
+}, maxtime*1000);
+
+document.getElementById("finishButton").addEventListener("click", function() {
+		clearTimeout(timeoutID);
+		clearInterval(countdown);
+		drawCircles();
+		isLocked=true;
+});
+    </script>
+  </body>
+</html>
