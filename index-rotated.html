@@ -16,6 +16,7 @@
 		<progress id="timer" value="90" max="90" style="width: 850px;"></progress>
 		<br>
     <button id="finishButton" style="font-size: 20px; padding: 10px;">Finish</button>
+    <button id="helpButton" style="font-size: 20px; padding: 10px;">Help</button>
 		<br>
 		<br>
 		<a href="index.html">main page</a>
@@ -23,7 +24,7 @@
     <script>
 var numCircles = 9;
 var nfreeCircles = 4;
-var maxtime = 120;
+var maxtime = 150;
 
 var maxRad = 32;
 var fRad = 0.75;
@@ -36,6 +37,8 @@ var rightCtx = rightCanvas.getContext("2d");
 
 rightCanvas.width = leftCanvas.width * sc;
 rightCanvas.height = leftCanvas.height * sc;
+
+document.getElementById("helpButton").disabled = true;
 
 // Circle object
 function Circle(x, y, r, color) {
@@ -56,7 +59,7 @@ function Circle(x, y, r, color) {
 // Array of circles for left and right canvases
 var leftCircles = [];
 var rightCircles = [];
-var rotang = Math.random() * 0.3 + 0.1
+var rotang = Math.random() * 0.3 + 0.12
 if (Math.random() > 0.5) rotang *= -1
 
 // Function to check if two circles overlap
@@ -79,19 +82,28 @@ function doesCircleOverlap(circle, circles) {
 
 // Create circles at random positions on left canvas without overlapping
 for (var i=0,r=maxRad; i < numCircles; i++,r*=fRad) {
-	if(i == numCircles-nfreeCircles)
+	if(i == numCircles-nfreeCircles) {
 		r = maxRad
+	}
+	var tempRad = r;  
+	if(i < numCircles-nfreeCircles) {
+		tempRad = r + 50 // for spacing
+	}
 	var x = Math.random() * (leftCanvas.width-r*2-44)+r+22;
 	var y = Math.random() * (leftCanvas.height-r*2-44)+r+22;
 	var color = i<numCircles-nfreeCircles ? 'black' : 'darkblue';
-	var circle = new Circle(x, y, r, color);
+	var circle = new Circle(x, y, tempRad, color);
 	
 	// Keep generating new positions until the circle doesn't overlap with any existing circles
-	for (var u=0; u<999 && doesCircleOverlap(circle, leftCircles); u++){
+	for (var u=0; doesCircleOverlap(circle, leftCircles); u++){
+		if (u>9) circle.r -= 0.1;
 		var x = Math.random() * (leftCanvas.width-r*2-44)+r+22;
 		var y = Math.random() * (leftCanvas.height-r*2-44)+r+22;
 		circle.x = x;
 		circle.y = y;
+	}
+	if(i < numCircles-nfreeCircles) {
+		circle.r = r // resume normal radius
 	}
 	
 	leftCircles.push(circle);
@@ -264,7 +276,20 @@ function drawCircles() {
 		circle.draw(rightCtx);
 	}
 	
-	// Draw right circles
+	var score = drawRightCirclesWithScore();
+	
+	//Score
+	rightCtx.font = "32px Arial";
+	rightCtx.textAlign = 'center';
+	rightCtx.fillStyle = "darkblue";
+	rightCtx.fillText('\u2588'.repeat(score.toString().length), rightCanvas.width/2, rightCanvas.height/2);
+	rightCtx.fillStyle = 'yellow';
+	rightCtx.fillText(score, rightCanvas.width/2, rightCanvas.height/2);
+}
+
+function drawRightCirclesWithScore() {
+	var score = 0;
+	
 	for (var i = 0; i < rightCircles.length; i++) {
 		rightCircles[i].draw(rightCtx);
 		if(i<numCircles-nfreeCircles){
@@ -285,22 +310,10 @@ function drawCircles() {
 			var y2 = rightCircles[i].y;
 			var distance = Math.floor(Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2)));
 			score += distance;
-			//var textWidth = rightCtx.measureText(distance).width;
-			//rightCtx.fillText(distance, rightCircles[i].x - (textWidth / 2), rightCircles[i].y + (fontSize/2.4));
 			rightCtx.fillText(distance, rightCircles[i].x, rightCircles[i].y + 5);
 		}
 	}
-	
-	//Score
-	rightCtx.font = "32px Arial";
-	rightCtx.textAlign = 'center';
-	rightCtx.fillStyle = "darkblue";
-	rightCtx.fillText('\u2588'.repeat(score.toString().length), rightCanvas.width/2, rightCanvas.height/2);
-	rightCtx.fillStyle = 'yellow';
-	rightCtx.fillText(score, rightCanvas.width/2, rightCanvas.height/2);
-	
-	//var textWidth = rightCtx.measureText(score).width;
-	//rightCtx.fillText(score, (rightCanvas.width / 2) - (textWidth / 2), rightCanvas.height / 2);
+	return score;
 }
 
 var timerElement = document.getElementById("timer");
@@ -314,6 +327,9 @@ var countdown = setInterval(function() {
 		if (timeLeft <= 0) {
 				clearInterval(countdown);
 		}
+		if (timeLeft <= maxtime / 2) {
+        document.getElementById("helpButton").disabled = false;
+    }
 }, 1000);
 
 var timeoutID = setTimeout(function() {
@@ -328,6 +344,12 @@ document.getElementById("finishButton").addEventListener("click", function() {
 		drawCircles();
 		isLocked=true;
 });
+
+document.getElementById("helpButton").addEventListener("click", function() {
+		drawRightCirclesWithScore();
+		this.disabled = true;
+});
+
     </script>
   </body>
 </html>
