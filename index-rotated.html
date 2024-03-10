@@ -23,8 +23,8 @@
 
     <script>
 var numCircles = 9;
-var nfreeCircles = 4;
-var maxtime = 150;
+var nfreeCircles = 3;
+var maxtime = 120;
 
 var maxRad = 32;
 var fRad = 0.75;
@@ -154,7 +154,7 @@ function rotatePoint(x, y, angle) {
 	return [nx, ny];
 }
 
-function rotatePoint2(pt, angle) {
+function rotatePoint2(pt, angle) { // not used
 	var x = pt.x
 	var y = pt.y
 	var cx = leftCanvas.width/2;
@@ -166,13 +166,14 @@ function rotatePoint2(pt, angle) {
 }
 
 
-// Variables to track mouse position and whether circle is being dragged
 var mouseX;
 var mouseY;
 var isDragging = false;
 var draggedCircle;
 var dcdX, dcdY;
 var isLocked = false;
+var helpUsed = false;
+
 
 // Function to check if mouse is over a circle on the right canvas
 function getMouseOverCircle() {
@@ -327,7 +328,7 @@ var countdown = setInterval(function() {
 		if (timeLeft <= 0) {
 				clearInterval(countdown);
 		}
-		if (timeLeft <= maxtime / 2) {
+		if (!helpUsed && timeLeft <= maxtime / 2) {
         document.getElementById("helpButton").disabled = false;
     }
 }, 1000);
@@ -347,7 +348,7 @@ document.getElementById("finishButton").addEventListener("click", function() {
 
 document.getElementById("helpButton").addEventListener("click", function() {
 		drawRightCirclesWithScore();
-		this.disabled = true;
+		this.disabled = helpUsed = true;
 });
 
     </script>
