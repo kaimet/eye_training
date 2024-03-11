@@ -6,7 +6,7 @@
   <body>
 	  <!--<div id="timer" style="font-size: 20px;"></div> -->
 		
-    <canvas id="leftCanvas" width="320" height="320" style="margin-right: 100px; margin-bottom: 130px;border:1px solid #ffffff;">
+    <canvas id="leftCanvas" width="360" height="360" style="margin-right: 100px; margin-bottom: 130px;border:1px solid #ffffff;">
       Your browser does not support the HTML5 canvas tag.
     </canvas>
     <canvas id="rightCanvas" width="400" height="400" style="margin-top: 50px;border:1px solid #ffffff;">
@@ -22,13 +22,22 @@
 		<a href="index.html">main page</a>
 
     <script>
+
+// ===============================================
+
 var numCircles = 9;
 var nfreeCircles = 3;
 var maxtime = 120;
 
 var maxRad = 32;
-var fRad = 0.75;
-var sc = 1.25;
+var fRad = 0.8;
+var sc = 1.2;
+var brd = 28;
+var rotang = Math.random() * 0.3 + 0.12
+if (Math.random() > 0.5) rotang *= -1
+
+// ===============================================
+
 
 var leftCanvas = document.getElementById("leftCanvas");
 var leftCtx = leftCanvas.getContext("2d");
@@ -59,8 +68,6 @@ function Circle(x, y, r, color) {
 // Array of circles for left and right canvases
 var leftCircles = [];
 var rightCircles = [];
-var rotang = Math.random() * 0.3 + 0.12
-if (Math.random() > 0.5) rotang *= -1
 
 // Function to check if two circles overlap
 function doCirclesOverlap(circle1, circle2) {
@@ -85,26 +92,26 @@ for (var i=0,r=maxRad; i < numCircles; i++,r*=fRad) {
 	if(i == numCircles-nfreeCircles) {
 		r = maxRad
 	}
-	var tempRad = r;  
+	var tempRad = r + 9;   // for spacing
 	if(i < numCircles-nfreeCircles) {
-		tempRad = r + 50 // for spacing
+		tempRad = r + 50
 	}
-	var x = Math.random() * (leftCanvas.width-r*2-44)+r+22;
-	var y = Math.random() * (leftCanvas.height-r*2-44)+r+22;
+	
+	var x = Math.random() * (leftCanvas.width-(brd+r)*2) + brd+r;
+	var y = Math.random() * (leftCanvas.height-(brd+r)*2) + brd+r;
 	var color = i<numCircles-nfreeCircles ? 'black' : 'darkblue';
 	var circle = new Circle(x, y, tempRad, color);
 	
 	// Keep generating new positions until the circle doesn't overlap with any existing circles
 	for (var u=0; doesCircleOverlap(circle, leftCircles); u++){
 		if (u>9) circle.r -= 0.1;
-		var x = Math.random() * (leftCanvas.width-r*2-44)+r+22;
-		var y = Math.random() * (leftCanvas.height-r*2-44)+r+22;
+		var x = Math.random() * (leftCanvas.width-(brd+r)*2) + brd+r;
+		var y = Math.random() * (leftCanvas.height-(brd+r)*2) + brd+r;
 		circle.x = x;
 		circle.y = y;
 	}
-	if(i < numCircles-nfreeCircles) {
-		circle.r = r // resume normal radius
-	}
+	
+	circle.r = r // resume normal radius
 	
 	leftCircles.push(circle);
 	circle.draw(leftCtx);
