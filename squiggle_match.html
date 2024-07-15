@@ -74,10 +74,10 @@
 
                 let validPoint = false;
                 while (!validPoint) {
-                    const distance = Math.random() * 50 + 30;
+                    const distance = Math.random() * 60 + 40;
                     const newX = x + Math.cos(angle) * distance;
                     const newY = y + Math.sin(angle) * distance;
-										const border = 15;
+										const border = 10;
                     if (newX >= border && newX < canvas.width - border && newY >= border && newY < canvas.height - border) {
                         x = newX;
                         y = newY;
@@ -87,7 +87,7 @@
                     }
                 }
 
-                angle += (Math.random() * Math.PI / 2 + Math.PI / 4) * (Math.random() < 0.5 ? 1 : -1);
+                angle += (Math.random() * Math.PI / 2 + Math.PI / 3) * (Math.random() < 0.5 ? 1 : -1);
             }
 
             return points;
