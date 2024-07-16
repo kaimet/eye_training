@@ -48,164 +48,179 @@
 		<br>
 		<a href="index.html">main page</a>
 
-    <script>
-        const leftCanvas = document.getElementById('leftCanvas');
-        const rightCanvas = document.getElementById('rightCanvas');
-        const generateBtn = document.getElementById('generateBtn');
-        const evaluateBtn = document.getElementById('evaluateBtn');
-        //const errorDisplay = document.getElementById('errorDisplay');
 
-        const leftCtx = leftCanvas.getContext('2d');
-        const rightCtx = rightCanvas.getContext('2d');
 
-        let originalPoints = [];
-        let userPoints = [];
-        const numPoints = 8;
-        const scaleFactor = rightCanvas.width/leftCanvas.width;
+<script> // ==============================
 
-        function generateRandomPath(canvas) {
-            const points = [];
-            let x = canvas.width / 2;
-            let y = canvas.height / 2;
-            let angle = Math.random() * Math.PI * 2;
 
-            for (let i = 0; i < numPoints; i++) {
-                points.push({ x, y });
+const numPoints = 8;
+const minAngle = Math.PI * 0.15;
+const maxAngle = Math.PI * 0.8;
+const turnRange = maxAngle - minAngle;
+const minSegmentLength = 40;
+const maxSegmentLength = 100;
+const segmentLengthRange = maxSegmentLength - minSegmentLength;
 
-                let validPoint = false;
-                while (!validPoint) {
-                    const distance = Math.random() * 60 + 60;
-                    const newX = x + Math.cos(angle) * distance;
-                    const newY = y + Math.sin(angle) * distance;
-										const border = 5;
-                    if (newX >= border && newX < canvas.width - border && newY >= border && newY < canvas.height - border) {
-                        x = newX;
-                        y = newY;
-                        validPoint = true;
-                    } else {
-                        angle = Math.random() * Math.PI * 2;
-                    }
-                }
 
-                angle += (Math.random() * Math.PI*0.5 + Math.PI*0.35) * (Math.random() < 0.5 ? 1 : -1);
-            }
+const leftCanvas = document.getElementById('leftCanvas');
+const rightCanvas = document.getElementById('rightCanvas');
+const leftCtx = leftCanvas.getContext('2d');
+const rightCtx = rightCanvas.getContext('2d');
+const scaleFactor = rightCanvas.width / leftCanvas.width;
 
-            return points;
-        }
+const generateBtn = document.getElementById('generateBtn');
+const evaluateBtn = document.getElementById('evaluateBtn');
+//const errorDisplay = document.getElementById('errorDisplay');
 
-        function drawSpline(ctx, points, showPoints = false, color = 'black', strokeWidth = 3) {
-            ctx.beginPath();
-            ctx.moveTo(points[0].x, points[0].y);
 
-            for (let i = 1; i < points.length - 2; i++) {
-                const xc = (points[i].x + points[i + 1].x) / 2;
-                const yc = (points[i].y + points[i + 1].y) / 2;
-                ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
-            }
+let originalPoints = [];
+let userPoints = [];
+				
 
-            ctx.quadraticCurveTo(
-                points[points.length - 2].x,
-                points[points.length - 2].y,
-                points[points.length - 1].x,
-                points[points.length - 1].y
-            );
+function generateRandomPath(canvas) {
+    const points = [];
+    let x = canvas.width / 2;
+    let y = canvas.height / 2;
+    let angle = Math.random() * Math.PI * 2;
 
-            ctx.strokeStyle = color;
-            ctx.lineWidth = strokeWidth * (ctx == rightCtx ? scaleFactor : 1);
-            ctx.stroke();
+    for (let i = 0; i < numPoints; i++) {
+        points.push({ x, y });
 
-            if (showPoints) {
-                points.forEach((point, index) => {
-                    if (index > 2) {
-											ctx.beginPath();
-											ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
-											ctx.fillStyle = index < 3 ? 'gray' : 'red';
-											//ctx.fill();
-											ctx.strokeStyle = 'gray';
-											ctx.lineWidth = 1;
-											ctx.stroke();
-										}
-                });
+        let validPoint = false;
+        while (!validPoint) {
+            const distance = Math.random() * segmentLengthRange + minSegmentLength;
+            const turnAngle = (Math.random() * turnRange + minAngle) * (Math.random() < 0.5 ? 1 : -1);
+            const newAngle = (angle + turnAngle + Math.PI * 2) % (Math.PI * 2);
+            const newX = x + Math.cos(newAngle) * distance;
+            const newY = y + Math.sin(newAngle) * distance;
+            
+            const border = 5;
+            if (newX >= border && newX < canvas.width - border && newY >= border && newY < canvas.height - border) {
+                x = newX;
+                y = newY;
+                angle = newAngle;
+                validPoint = true;
             }
         }
+    }
 
-        function generateNewLine() {
-            leftCtx.clearRect(0, 0, leftCanvas.width, leftCanvas.height);
-            rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
+    return points;
+}
 
-            originalPoints = generateRandomPath(leftCanvas);
-            drawSpline(leftCtx, originalPoints);
+function drawSpline(ctx, points, showPoints = false, color = 'black', strokeWidth = 3) {
+		ctx.beginPath();
+		ctx.moveTo(points[0].x, points[0].y);
 
-            userPoints = originalPoints.map((point, index) => {
-                if (index < 3) {
-                    return { x: point.x * scaleFactor, y: point.y * scaleFactor };
-                } else {
-                    let x = 0; 
-										let y = 0;
-										do {
-											const displacement = Math.random() * 30 + 20;
-											const angle = Math.random() * Math.PI * 2;
-											x = point.x * scaleFactor + Math.cos(angle) * displacement;
-											y = point.y * scaleFactor + Math.sin(angle) * displacement;;
-										} while (x < 0 || y < 0 || x > rightCanvas.width || y > rightCanvas.height);
-										
-                    return {x: x, y: y};
-                }
-            });
+		for (let i = 1; i < points.length - 2; i++) {
+				const xc = (points[i].x + points[i + 1].x) / 2;
+				const yc = (points[i].y + points[i + 1].y) / 2;
+				ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+		}
 
-            drawSpline(rightCtx, userPoints, true);
+		ctx.quadraticCurveTo(
+				points[points.length - 2].x,
+				points[points.length - 2].y,
+				points[points.length - 1].x,
+				points[points.length - 1].y
+		);
+
+		ctx.strokeStyle = color;
+		ctx.lineWidth = strokeWidth * (ctx == rightCtx ? scaleFactor : 1);
+		ctx.stroke();
+
+		if (showPoints) {
+				points.forEach((point, index) => {
+						if (index > 2) {
+							ctx.beginPath();
+							ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+							ctx.fillStyle = index < 3 ? 'gray' : 'red';
+							//ctx.fill();
+							ctx.strokeStyle = 'gray';
+							ctx.lineWidth = 1;
+							ctx.stroke();
+						}
+				});
+		}
+}
+
+function generateNewLine() {
+		leftCtx.clearRect(0, 0, leftCanvas.width, leftCanvas.height);
+		rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
+
+		originalPoints = generateRandomPath(leftCanvas);
+		drawSpline(leftCtx, originalPoints);
+
+		userPoints = originalPoints.map((point, index) => {
+				if (index < 3) {
+						return { x: point.x * scaleFactor, y: point.y * scaleFactor };
+				} else {
+						let x = 0; 
+						let y = 0;
+						do {
+							const displacement = Math.random() * 30 + 20;
+							const angle = Math.random() * Math.PI * 2;
+							x = point.x * scaleFactor + Math.cos(angle) * displacement;
+							y = point.y * scaleFactor + Math.sin(angle) * displacement;;
+						} while (x < 0 || y < 0 || x > rightCanvas.width || y > rightCanvas.height);
 						
-						//errorDisplay.textContent = '';
-        }
+						return {x: x, y: y};
+				}
+		});
 
-        function evaluateDrawing() {
-            let totalError = 0;
-            for (let i = 3; i < numPoints; i++) {
-                const dx = userPoints[i].x / scaleFactor - originalPoints[i].x;
-                const dy = userPoints[i].y / scaleFactor - originalPoints[i].y;
-                totalError += Math.sqrt(dx * dx + dy * dy);
-            }
-            //errorDisplay.textContent = `Total Error: ${totalError.toFixed(0)} pixels`;
-						
-						drawSpline(leftCtx, originalPoints, true);
-						drawSpline(rightCtx, originalPoints.map(p => ({ x: p.x * scaleFactor, y: p.y * scaleFactor })), false, 'blue');
-        }
+		drawSpline(rightCtx, userPoints, true);
+		
+		//errorDisplay.textContent = '';
+}
 
-        generateBtn.addEventListener('click', generateNewLine);
-        evaluateBtn.addEventListener('click', evaluateDrawing);
+function evaluateDrawing() {
+		let totalError = 0;
+		for (let i = 3; i < numPoints; i++) {
+				const dx = userPoints[i].x / scaleFactor - originalPoints[i].x;
+				const dy = userPoints[i].y / scaleFactor - originalPoints[i].y;
+				totalError += Math.sqrt(dx * dx + dy * dy);
+		}
+		//errorDisplay.textContent = `Total Error: ${totalError.toFixed(0)} pixels`;
+		
+		drawSpline(leftCtx, originalPoints, true);
+		drawSpline(rightCtx, originalPoints.map(p => ({ x: p.x * scaleFactor, y: p.y * scaleFactor })), false, 'blue');
+}
 
-        let draggingPoint = null;
+generateBtn.addEventListener('click', generateNewLine);
+evaluateBtn.addEventListener('click', evaluateDrawing);
 
-        rightCanvas.addEventListener('mousedown', (e) => {
-            const rect = rightCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+let draggingPoint = null;
 
-            for (let i = 3; i < userPoints.length; i++) {
-                const point = userPoints[i];
-                if (Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2) < 10) {
-                    draggingPoint = i;
-                    break;
-                }
-            }
-        });
+rightCanvas.addEventListener('mousedown', (e) => {
+		const rect = rightCanvas.getBoundingClientRect();
+		const x = e.clientX - rect.left;
+		const y = e.clientY - rect.top;
 
-        rightCanvas.addEventListener('mousemove', (e) => {
-            if (draggingPoint !== null) {
-                const rect = rightCanvas.getBoundingClientRect();
-                userPoints[draggingPoint].x = e.clientX - rect.left;
-                userPoints[draggingPoint].y = e.clientY - rect.top;
+		for (let i = 3; i < userPoints.length; i++) {
+				const point = userPoints[i];
+				if (Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2) < 10) {
+						draggingPoint = i;
+						break;
+				}
+		}
+});
 
-                rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
-                drawSpline(rightCtx, userPoints, true);
-            }
-        });
+rightCanvas.addEventListener('mousemove', (e) => {
+		if (draggingPoint !== null) {
+				const rect = rightCanvas.getBoundingClientRect();
+				userPoints[draggingPoint].x = e.clientX - rect.left;
+				userPoints[draggingPoint].y = e.clientY - rect.top;
 
-        rightCanvas.addEventListener('mouseup', () => {
-            draggingPoint = null;
-        });
+				rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
+				drawSpline(rightCtx, userPoints, true);
+		}
+});
 
-        generateNewLine();
-    </script>
+rightCanvas.addEventListener('mouseup', () => {
+		draggingPoint = null;
+});
+
+generateNewLine();
+
+</script>
 </body>
 </html>
