@@ -181,7 +181,7 @@ function evaluateDrawing() {
 		}
 		//errorDisplay.textContent = `Total Error: ${totalError.toFixed(0)} pixels`;
 		
-		drawSpline(leftCtx, originalPoints, true);
+		drawSpline(leftCtx, originalPoints);
 		drawSpline(rightCtx, originalPoints.map(p => ({ x: p.x * scaleFactor, y: p.y * scaleFactor })), false, 'blue');
 }
 
