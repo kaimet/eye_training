@@ -11,43 +11,50 @@
             flex-direction: column;
             align-items: center;
             background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
         }
         .canvas-container {
             display: flex;
-            justify-content: space-around;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
             width: 100%;
-            margin-bottom: 20px;
+            height: 90%;
         }
         canvas {
             background-color: white;
             border: 1px solid #000;
+            margin: 10px;
+        }
+        .button-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            padding: 10px 0;
         }
         button {
             font-size: 16px;
             padding: 10px 20px;
-            margin: 10px;
+            margin: 0 10px;
             cursor: pointer;
+        }
+        #mainPageLink {
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
-    <!--<h1>Proportion Training for Artists</h1>-->
-    <!--<div class="canvas-container">
-    </div>    -->
-				<canvas id="leftCanvas" width="240" height="240"></canvas>
-				<br>
-        <canvas id="rightCanvas" width="320" height="320"></canvas>
-    
-    <div>
-		<button id="generateBtn">New</button>
-    <button id="evaluateBtn">Evaluate</button>
-		</div>
-    <!--<p id="errorDisplay" style="font-size: 24px;"></p>-->
-		
-		<br>
-		<br>
-		<a href="index.html">main page</a>
-
+    <div class="canvas-container">
+        <canvas id="leftCanvas"></canvas>
+        <canvas id="rightCanvas"></canvas>
+    </div>
+    <div class="button-container">
+        <button id="generateBtn">New</button>
+        <button id="evaluateBtn">Evaluate</button>
+    </div>
+    <a id="mainPageLink" href="index.html">main page</a>
 
 
 <script> // ==============================
@@ -66,11 +73,46 @@ const leftCanvas = document.getElementById('leftCanvas');
 const rightCanvas = document.getElementById('rightCanvas');
 const leftCtx = leftCanvas.getContext('2d');
 const rightCtx = rightCanvas.getContext('2d');
-const scaleFactor = rightCanvas.width / leftCanvas.width;
+let scaleFactor = rightCanvas.width / leftCanvas.width;
 
 const generateBtn = document.getElementById('generateBtn');
 const evaluateBtn = document.getElementById('evaluateBtn');
 //const errorDisplay = document.getElementById('errorDisplay');
+
+
+const canvasContainer = document.querySelector('.canvas-container');
+let isLandscape = window.innerWidth > window.innerHeight;
+
+function resizeCanvases() {
+    const containerWidth = canvasContainer.clientWidth;
+    const containerHeight = canvasContainer.clientHeight;
+    isLandscape = containerWidth > containerHeight;
+
+    let leftSize, rightSize;
+
+    if (isLandscape) {
+        let s = Math.min(containerHeight, containerWidth * 0.5);
+				leftSize = s * 3/4;
+        rightSize = s;
+    } else {
+        let s = Math.min(containerWidth, containerHeight * 0.5);
+				leftSize = s * 3/4;
+        rightSize = s;
+    }
+
+    leftCanvas.width = leftCanvas.height = leftSize;
+    rightCanvas.width = rightCanvas.height = rightSize;
+
+    scaleFactor = rightCanvas.width / leftCanvas.width;
+
+    // Redraw canvases
+    if (originalPoints.length > 0) {
+        drawSpline(leftCtx, originalPoints);
+    }
+    if (userPoints.length > 0) {
+        drawSpline(rightCtx, userPoints, true);
+    }
+}
 
 
 let originalPoints = [];
@@ -144,32 +186,30 @@ function drawSpline(ctx, points, showPoints = false, color = 'black', strokeWidt
 }
 
 function generateNewLine() {
-		leftCtx.clearRect(0, 0, leftCanvas.width, leftCanvas.height);
-		rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
+    leftCtx.clearRect(0, 0, leftCanvas.width, leftCanvas.height);
+    rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
 
-		originalPoints = generateRandomPath(leftCanvas);
-		drawSpline(leftCtx, originalPoints);
+    originalPoints = generateRandomPath(leftCanvas);
+    drawSpline(leftCtx, originalPoints);
 
-		userPoints = originalPoints.map((point, index) => {
-				if (index < 3) {
-						return { x: point.x * scaleFactor, y: point.y * scaleFactor };
-				} else {
-						let x = 0; 
-						let y = 0;
-						do {
-							const displacement = Math.random() * 30 + 20;
-							const angle = Math.random() * Math.PI * 2;
-							x = point.x * scaleFactor + Math.cos(angle) * displacement;
-							y = point.y * scaleFactor + Math.sin(angle) * displacement;;
-						} while (x < 0 || y < 0 || x > rightCanvas.width || y > rightCanvas.height);
-						
-						return {x: x, y: y};
-				}
-		});
+    userPoints = originalPoints.map((point, index) => {
+        if (index < 3) {
+            return { x: point.x * scaleFactor, y: point.y * scaleFactor };
+        } else {
+            let x = 0; 
+            let y = 0;
+            do {
+                const displacement = Math.random() * 30 + 20;
+                const angle = Math.random() * Math.PI * 2;
+                x = point.x * scaleFactor + Math.cos(angle) * displacement;
+                y = point.y * scaleFactor + Math.sin(angle) * displacement;
+            } while (x < 0 || y < 0 || x > rightCanvas.width || y > rightCanvas.height);
+            
+            return {x: x, y: y};
+        }
+    });
 
-		drawSpline(rightCtx, userPoints, true);
-		
-		//errorDisplay.textContent = '';
+    drawSpline(rightCtx, userPoints, true);
 }
 
 function evaluateDrawing() {
@@ -188,36 +228,60 @@ function evaluateDrawing() {
 generateBtn.addEventListener('click', generateNewLine);
 evaluateBtn.addEventListener('click', evaluateDrawing);
 
+
+
 let draggingPoint = null;
 
-rightCanvas.addEventListener('mousedown', (e) => {
-		const rect = rightCanvas.getBoundingClientRect();
-		const x = e.clientX - rect.left;
-		const y = e.clientY - rect.top;
+rightCanvas.addEventListener('mousedown', startDragging);
+rightCanvas.addEventListener('mousemove', drag);
+rightCanvas.addEventListener('mouseup', stopDragging);
+rightCanvas.addEventListener('touchstart', handleTouch);
+rightCanvas.addEventListener('touchmove', handleTouch);
+rightCanvas.addEventListener('touchend', stopDragging);
 
-		for (let i = 3; i < userPoints.length; i++) {
-				const point = userPoints[i];
-				if (Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2) < 10) {
-						draggingPoint = i;
-						break;
-				}
-		}
-});
+function startDragging(e) {
+    const rect = rightCanvas.getBoundingClientRect();
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
 
-rightCanvas.addEventListener('mousemove', (e) => {
-		if (draggingPoint !== null) {
-				const rect = rightCanvas.getBoundingClientRect();
-				userPoints[draggingPoint].x = e.clientX - rect.left;
-				userPoints[draggingPoint].y = e.clientY - rect.top;
+    for (let i = 3; i < userPoints.length; i++) {
+        const point = userPoints[i];
+        if (Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2) < 10) {
+            draggingPoint = i;
+            break;
+        }
+    }
+}
 
-				rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
-				drawSpline(rightCtx, userPoints, true);
-		}
-});
+function drag(e) {
+    if (draggingPoint !== null) {
+        const rect = rightCanvas.getBoundingClientRect();
+        userPoints[draggingPoint].x = (e.clientX || e.touches[0].clientX) - rect.left;
+        userPoints[draggingPoint].y = (e.clientY || e.touches[0].clientY) - rect.top;
 
-rightCanvas.addEventListener('mouseup', () => {
-		draggingPoint = null;
-});
+        rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
+        drawSpline(rightCtx, userPoints, true);
+    }
+}
+
+function stopDragging() {
+    draggingPoint = null;
+}
+
+function handleTouch(e) {
+    e.preventDefault();
+    if (e.type === 'touchstart') {
+        startDragging(e);
+    } else if (e.type === 'touchmove') {
+        drag(e);
+    }
+}
+
+
+
+resizeCanvases();
+window.addEventListener('resize', resizeCanvases);
+window.addEventListener('orientationchange', resizeCanvases);
 
 generateNewLine();
 
