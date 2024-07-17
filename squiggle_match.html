@@ -243,12 +243,16 @@ function startDragging(e) {
     const rect = rightCanvas.getBoundingClientRect();
     const x = (e.clientX || e.touches[0].clientX) - rect.left;
     const y = (e.clientY || e.touches[0].clientY) - rect.top;
-
+		
+		let minD = 9999;
     for (let i = 3; i < userPoints.length; i++) {
         const point = userPoints[i];
-        if (Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2) < 10) {
-            draggingPoint = i;
-            break;
+        let d = (x - point.x) ** 2 + (y - point.y) ** 2;
+				if (d < 2500) {
+            if (d < minD) {
+							draggingPoint = i;
+							minD = d;
+						}
         }
     }
 }
