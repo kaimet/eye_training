@@ -64,8 +64,8 @@ const numPoints = 8;
 const minAngle = Math.PI * 0.15;
 const maxAngle = Math.PI * 0.8;
 const turnRange = maxAngle - minAngle;
-const minSegmentLength = 40;
-const maxSegmentLength = 100;
+const minSegmentLength = 0.25; // in square side length
+const maxSegmentLength = 0.7;
 const segmentLengthRange = maxSegmentLength - minSegmentLength;
 
 
@@ -130,7 +130,7 @@ function generateRandomPath(canvas) {
 
         let validPoint = false;
         while (!validPoint) {
-            const distance = Math.random() * segmentLengthRange + minSegmentLength;
+            const distance = (Math.random() * segmentLengthRange + minSegmentLength) * leftCanvas.width;
             const turnAngle = (Math.random() * turnRange + minAngle) * (Math.random() < 0.5 ? 1 : -1);
             const newAngle = (angle + turnAngle + Math.PI * 2) % (Math.PI * 2);
             const newX = x + Math.cos(newAngle) * distance;
