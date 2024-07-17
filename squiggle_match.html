@@ -231,6 +231,8 @@ evaluateBtn.addEventListener('click', evaluateDrawing);
 
 
 let draggingPoint = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
 
 rightCanvas.addEventListener('mousedown', startDragging);
 rightCanvas.addEventListener('mousemove', drag);
@@ -243,16 +245,18 @@ function startDragging(e) {
     const rect = rightCanvas.getBoundingClientRect();
     const x = (e.clientX || e.touches[0].clientX) - rect.left;
     const y = (e.clientY || e.touches[0].clientY) - rect.top;
-		
-		let minD = 9999;
+    
+    let minD = 9999;
     for (let i = 3; i < userPoints.length; i++) {
         const point = userPoints[i];
         let d = (x - point.x) ** 2 + (y - point.y) ** 2;
-				if (d < 2500) {
+        if (d < 2500) {
             if (d < minD) {
-							draggingPoint = i;
-							minD = d;
-						}
+                draggingPoint = i;
+                minD = d;
+                dragOffsetX = point.x - x;
+                dragOffsetY = point.y - y;
+            }
         }
     }
 }
@@ -260,8 +264,11 @@ function startDragging(e) {
 function drag(e) {
     if (draggingPoint !== null) {
         const rect = rightCanvas.getBoundingClientRect();
-        userPoints[draggingPoint].x = (e.clientX || e.touches[0].clientX) - rect.left;
-        userPoints[draggingPoint].y = (e.clientY || e.touches[0].clientY) - rect.top;
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
+        const y = (e.clientY || e.touches[0].clientY) - rect.top;
+        
+        userPoints[draggingPoint].x = x + dragOffsetX;
+        userPoints[draggingPoint].y = y + dragOffsetY;
 
         rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
         drawSpline(rightCtx, userPoints, true);
@@ -270,6 +277,8 @@ function drag(e) {
 
 function stopDragging() {
     draggingPoint = null;
+    dragOffsetX = 0;
+    dragOffsetY = 0;
 }
 
 function handleTouch(e) {
