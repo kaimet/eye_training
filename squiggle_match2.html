@@ -57,28 +57,34 @@
             justify-content: center;
             margin-top: 10px;
         }
-        #autoDifficultyCheckbox {
+        .checkbox-container input[type="checkbox"] {
             margin-right: 5px;
+        }
+        .checkbox-container label {
+            margin-right: 15px;
         }
     </style>
 </head>
 <body>
-    <h3>Find the Match</h1>
+    <h3><span id="title">Find the Match</span></h3>
     <div class="canvas-container" id="canvasContainer"></div>
     <div class="controls">
         <button id="helpButton">Help</button>
         <div>Precision: <span id="precisionValue"></span></div>
         <input type="range" id="precisionSlider" min="0" max="100" value="38">
         <div class="checkbox-container">
-            <input type="checkbox" id="autoDifficultyCheckbox">
-            <label for="autoDifficultyCheckbox">Auto-increase difficulty</label>
         </div>
+				<input type="checkbox" id="autoDifficultyCheckbox">
+				<label for="autoDifficultyCheckbox">Auto-increase difficulty</label>
+				<br><br>
+				<input type="checkbox" id="memoryModeCheckbox">
+				<label for="memoryModeCheckbox">Memory Mode</label>
     </div>
 		
     <br>
     <br>
     <br>
-		<a id="mainPageLink" href="index.html">main page</a>
+		<a id="mainPageLink" href="index.html">home page</a>
 
 
 
@@ -102,6 +108,7 @@ const edgeMargin = 10;
 let referencePoints = [];
 let canvases = [];
 let correctIndex;
+let memoryMode = false;
 
 
 function updatePrecision(newgame = true) {
@@ -122,22 +129,32 @@ function calculateCanvasSize() {
 }
 
 function createCanvases() {
-		const container = document.getElementById('canvasContainer');
-		container.innerHTML = '';
-		canvases = [];
+    const container = document.getElementById('canvasContainer');
+    container.innerHTML = '';
+    canvases = [];
 
-		for (let i = 0; i < numCanvases; i++) {
-				const canvas = document.createElement('canvas');
-				canvas.width = canvas.height = canvasSize;
-				canvas.id = `canvas${i}`;
-				if (i === 0) {
-						canvas.classList.add('reference');
-				} else {
-						canvas.addEventListener('click', () => checkCanvas(i));
-				}
-				container.appendChild(canvas);
-				canvases.push(canvas);
-		}
+    for (let i = 0; i < numCanvases; i++) {
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = canvasSize;
+        canvas.id = `canvas${i}`;
+        if (i === 0) {
+            canvas.classList.add('reference');
+            if (memoryMode) {
+                canvas.addEventListener('click', startMemoryModeGame);
+								canvas.style.cursor = 'pointer';
+            }
+        } else {
+            canvas.addEventListener('click', () => checkCanvas(i));
+            if (memoryMode) {
+                canvas.style.display = 'none';
+            }
+        }
+        container.appendChild(canvas);
+        canvases.push(canvas);
+    }
+		
+		document.getElementById('title').textContent = memoryMode ? 'Memorize' : 'Find the Match';
+		document.getElementById('helpButton').style.display = memoryMode ? 'none' : 'inline-block';
 }
 
 function randomEdgePoint() {
@@ -249,7 +266,25 @@ function generateGame() {
 				}
 				drawSpline(canvases[i].getContext('2d'), points);
 		}
+
+    if (!memoryMode) {
+        showAllCanvases();
+    }
 }
+
+function startMemoryModeGame() {
+    canvases[0].style.display = 'none';
+    showAllCanvases();
+		document.getElementById('title').textContent = 'Find the Match';
+}
+
+function showAllCanvases() {
+    for (let i = 1; i < numCanvases; i++) {
+        canvases[i].style.display = 'inline-block';
+    }
+		document.getElementById('helpButton').style.display = 'inline-block';
+}
+
 
 function showHelp() {
 		for (let i = 1; i < numCanvases; i++) {
@@ -266,10 +301,22 @@ function checkCanvas(index) {
             increaseDifficulty();
         }
         
-        setTimeout(generateGame, 500);
+        setTimeout(() => {
+            if (memoryMode) {
+                showReferenceCanvas();
+            }
+            generateGame();
+        }, 500);
     } else {
         canvases[index].classList.add('wrong');
         canvases[index].removeEventListener('click', () => checkCanvas(index));
+    }
+}
+
+function showReferenceCanvas() {
+    canvases[0].style.display = 'inline-block';
+    for (let i = 1; i < numCanvases; i++) {
+        canvases[i].style.display = 'none';
     }
 }
 
@@ -286,6 +333,10 @@ window.addEventListener('resize', generateGame);
 document.getElementById('precisionSlider').addEventListener('input', updatePrecision);
 updatePrecision();
 document.getElementById('helpButton').addEventListener('click', showHelp);
+document.getElementById('memoryModeCheckbox').addEventListener('change', function() {
+    memoryMode = this.checked;
+    generateGame();
+});
 
 
 generateGame();
