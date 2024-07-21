@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find the Match</title>
+    <title>Squiggle Match</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -71,7 +71,7 @@
     <div class="controls">
         <button id="helpButton">Help</button>
         <div>Precision: <span id="precisionValue"></span></div>
-        <input type="range" id="precisionSlider" min="0" max="100" value="38">
+        <input type="range" id="precisionSlider" min="0" max="100" value="45">
         <div class="checkbox-container">
         </div>
 				<input type="checkbox" id="autoDifficultyCheckbox">
@@ -114,7 +114,7 @@ let memoryMode = false;
 function updatePrecision(newgame = true) {
 		const sliderValue = document.getElementById('precisionSlider').value;
 		precision = minPrecision + Math.pow(sliderValue / 100, 2) * (maxPrecision - minPrecision); // Non-linear scale
-		document.getElementById('precisionValue').textContent = precision.toFixed(4);
+		document.getElementById('precisionValue').textContent = (precision * 1000).toFixed(1);
 		
 		if (newgame) generateGame();
 }
@@ -332,6 +332,7 @@ function increaseDifficulty() {
 window.addEventListener('resize', generateGame);
 document.getElementById('precisionSlider').addEventListener('input', updatePrecision);
 updatePrecision();
+document.getElementById('autoDifficultyCheckbox').checked = true;
 document.getElementById('helpButton').addEventListener('click', showHelp);
 document.getElementById('memoryModeCheckbox').addEventListener('change', function() {
     memoryMode = this.checked;

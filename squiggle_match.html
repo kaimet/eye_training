@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Squigle Match</title>
+    <title>Squigle Draw</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -24,8 +24,8 @@
             height: 90%;
         }
         canvas {
-            background-color: white;
-            border: 1px solid #000;
+            background-color: #f0f0f0;
+            border: 0px solid #000;
             margin: 10px;
         }
         .button-container {
@@ -54,7 +54,8 @@
         <button id="generateBtn">New</button>
         <button id="evaluateBtn">Evaluate</button>
     </div>
-    <a id="mainPageLink" href="index.html">main page</a>
+		<br>
+    <a id="mainPageLink" href="index.html">home page</a>
 
 
 <script> // ==============================
@@ -172,7 +173,7 @@ function drawSpline(ctx, points, showPoints = false, color = 'black', strokeWidt
 
 		if (showPoints) {
 				points.forEach((point, index) => {
-						if (index > 2) {
+						if (index > 2 && index < points.length - 1) {
 							ctx.beginPath();
 							ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
 							ctx.fillStyle = index < 3 ? 'gray' : 'red';
@@ -193,7 +194,7 @@ function generateNewLine() {
     drawSpline(leftCtx, originalPoints);
 
     userPoints = originalPoints.map((point, index) => {
-        if (index < 3) {
+        if (index < 3 || index == originalPoints.length - 1) {
             return { x: point.x * scaleFactor, y: point.y * scaleFactor };
         } else {
             let x = 0; 
@@ -247,7 +248,7 @@ function startDragging(e) {
     const y = (e.clientY || e.touches[0].clientY) - rect.top;
     
     let minD = 55555;
-    for (let i = 3; i < userPoints.length; i++) {
+    for (let i = 3; i < userPoints.length - 1; i++) {
         const point = userPoints[i];
         let d = (x - point.x) ** 2 + (y - point.y) ** 2;
         if (d < 55555) {
