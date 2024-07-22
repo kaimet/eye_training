@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squiggle Match</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 10px;
+        }
+        .canvas-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        canvas {
+            background-color: white;
+            border: 1px solid #000;
+            cursor: pointer;
+        }
+        canvas.reference {
+            border: 2px solid blue;
+            cursor: default;
+        }
+        canvas.wrong {
+            background-color: #dddddd;
+            cursor: not-allowed;
+        }
+        canvas.correct {
+            background-color: #aaffaa;
+            cursor: default;
+        }
+        .controls {
+            margin-top: 10px;
+            width: 300px;
+            text-align: center;
+        }
+        #precisionSlider {
+            width: 100%;
+        }
+        #helpButton {
+            margin-top: 0px;
+            margin-bottom: 20px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        .checkbox-container label {
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h3><span id="title">Find the Match</span></h3>
+    <div class="canvas-container" id="canvasContainer"></div>
+    <div class="controls">
+        <button id="helpButton">Help</button>
+        <div>Precision: <span id="precisionValue"></span></div>
+        <input type="range" id="precisionSlider" min="0" max="100" value="45">
+        <div class="checkbox-container">
+        </div>
+				<input type="checkbox" id="autoDifficultyCheckbox">
+				<label for="autoDifficultyCheckbox">Auto-increase difficulty</label>
+				<br><br>
+				<input type="checkbox" id="memoryModeCheckbox">
+				<label for="memoryModeCheckbox">Memory Mode</label>
+    </div>
+		
+    <br>
+    <br>
+    <br>
+		<a id="mainPageLink" href="index.html">home page</a>
+
+
+
+
+<script> // ===============================
+
+const numCanvases = 6; // Including the reference canvas
+let canvasSize;
+const numPoints = 10;
+let precision = 0.01;
+const minPrecision = 0.0045;
+const maxPrecision = 0.06;
+const minSegmentLength = 0.25; // in square side length
+const maxSegmentLength = 0.7;
+const segmentLengthRange = maxSegmentLength - minSegmentLength;
+const minAngle = Math.PI * 0.15;
+const maxAngle = Math.PI * 0.8;
+const turnRange = maxAngle - minAngle;
+const edgeMargin = 10;
+
+let referencePoints = [];
+let canvases = [];
+let correctIndex;
+let memoryMode = false;
+
+
+function updatePrecision(newgame = true) {
+		const sliderValue = document.getElementById('precisionSlider').value;
+		precision = minPrecision + Math.pow(sliderValue / 100, 2) * (maxPrecision - minPrecision); // Non-linear scale
+		document.getElementById('precisionValue').textContent = (precision * 1000).toFixed(1);
+		
+		if (newgame) generateGame();
+}
+
+function calculateCanvasSize() {
+		const minSize = Math.min(window.innerWidth - 25, window.innerHeight - 80);
+		const maxSize = Math.max(window.innerWidth - 25, window.innerHeight - 80);
+		canvasSize = Math.min(minSize / 2 - 15, maxSize / 3 - 30);
+		canvasSize = Math.floor(canvasSize);
+		const container = document.getElementById('canvasContainer');
+		container.style.maxWidth = `${(canvasSize + 20) * 3}px`;
+}
+
+function createCanvases() {
+    const container = document.getElementById('canvasContainer');
+    container.innerHTML = '';
+    canvases = [];
+
+    for (let i = 0; i < numCanvases; i++) {
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = canvasSize;
+        canvas.id = `canvas${i}`;
+        if (i === 0) {
+            canvas.classList.add('reference');
+            if (memoryMode) {
+                canvas.addEventListener('click', startMemoryModeGame);
+								canvas.style.cursor = 'pointer';
+            }
+        } else {
+            canvas.addEventListener('click', () => checkCanvas(i));
+            if (memoryMode) {
+                canvas.style.display = 'none';
+            }
+        }
+        container.appendChild(canvas);
+        canvases.push(canvas);
+    }
+		
+		document.getElementById('title').textContent = memoryMode ? 'Memorize' : 'Find the Match';
+		document.getElementById('helpButton').style.display = memoryMode ? 'none' : 'inline-block';
+}
+
+function randomEdgePoint() {
+		const edge = Math.floor(Math.random() * 4);
+		switch (edge) {
+				case 0: // Top
+						return { x: Math.random() * (canvasSize - 2 * edgeMargin) + edgeMargin, y: 0 };
+				case 1: // Right
+						return { x: canvasSize, y: Math.random() * (canvasSize - 2 * edgeMargin) + edgeMargin };
+				case 2: // Bottom
+						return { x: Math.random() * (canvasSize - 2 * edgeMargin) + edgeMargin, y: canvasSize };
+				case 3: // Left
+						return { x: 0, y: Math.random() * (canvasSize - 2 * edgeMargin) + edgeMargin };
+		}
+}
+
+function projectOnNearestEdge(point) {
+		const distToTop = point.y;
+		const distToRight = canvasSize - point.x;
+		const distToBottom = canvasSize - point.y;
+		const distToLeft = point.x;
+
+		const minDist = Math.min(distToTop, distToRight, distToBottom, distToLeft);
+
+		if (minDist === distToTop) return { x: point.x, y: 0 };
+		if (minDist === distToRight) return { x: canvasSize, y: point.y };
+		if (minDist === distToBottom) return { x: point.x, y: canvasSize };
+		return { x: 0, y: point.y };
+}
+
+function generatePoints(canvas) {
+		const points = [];
+		let startPoint = randomEdgePoint();
+		points.push(startPoint);
+
+		let x = startPoint.x;
+		let y = startPoint.y;
+		let angle = Math.atan2(canvasSize / 2 - y, canvasSize / 2 - x);
+
+		for (let i = 1; i < numPoints - 1; i++) {
+				let validPoint = false;
+				while (!validPoint) {
+						const distance = (Math.random() * segmentLengthRange + minSegmentLength) * canvas.width;
+						const turnAngle = (Math.random() * turnRange + minAngle) * (Math.random() < 0.5 ? 1 : -1);
+						const newAngle = (angle + turnAngle + Math.PI * 2) % (Math.PI * 2);
+						const newX = x + Math.cos(newAngle) * distance;
+						const newY = y + Math.sin(newAngle) * distance;
+						
+						if (newX >= edgeMargin && newX < canvas.width - edgeMargin && newY >= edgeMargin && newY < canvas.height - edgeMargin) {
+								x = newX;
+								y = newY;
+								angle = newAngle;
+								validPoint = true;
+								points.push({ x, y });
+						}
+				}
+		}
+
+		const endPoint = projectOnNearestEdge({ x, y });
+		points.push(endPoint);
+
+		return points;
+}
+
+function drawSpline(ctx, points, color = 'black', lineWidth = 2) {
+		ctx.beginPath();
+		ctx.moveTo(points[0].x, points[0].y);
+
+		for (let i = 1; i < points.length - 2; i++) {
+				const xc = (points[i].x + points[i + 1].x) / 2;
+				const yc = (points[i].y + points[i + 1].y) / 2;
+				ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+		}
+
+		ctx.quadraticCurveTo(
+				points[points.length - 2].x,
+				points[points.length - 2].y,
+				points[points.length - 1].x,
+				points[points.length - 1].y
+		);
+
+		ctx.strokeStyle = color;
+		ctx.lineWidth = lineWidth;
+		ctx.stroke();
+}
+
+function generateGame() {
+		calculateCanvasSize();
+		createCanvases();
+		referencePoints = generatePoints(canvases[0]);
+		drawSpline(canvases[0].getContext('2d'), referencePoints);
+
+		correctIndex = Math.floor(Math.random() * (numCanvases - 1)) + 1;
+
+		for (let i = 1; i < numCanvases; i++) {
+				let points;
+				if (i === correctIndex) {
+						points = [...referencePoints];
+				} else {
+						points = referencePoints.map((point, index) => {
+								if (index === 0 || index === referencePoints.length - 1) {
+										return point; // Keep start and end points the same
+								}
+								return {
+										x: point.x + (Math.random() * precision + precision) * canvasSize * (Math.random() < 0.5 ? 1 : -1),
+										y: point.y + (Math.random() * precision + precision) * canvasSize * (Math.random() < 0.5 ? 1 : -1)
+								};
+						});
+				}
+				drawSpline(canvases[i].getContext('2d'), points);
+		}
+
+    if (!memoryMode) {
+        showAllCanvases();
+    }
+}
+
+function startMemoryModeGame() {
+    canvases[0].style.display = 'none';
+    showAllCanvases();
+		document.getElementById('title').textContent = 'Find the Match';
+}
+
+function showAllCanvases() {
+    for (let i = 1; i < numCanvases; i++) {
+        canvases[i].style.display = 'inline-block';
+    }
+		document.getElementById('helpButton').style.display = 'inline-block';
+}
+
+
+function showHelp() {
+		for (let i = 1; i < numCanvases; i++) {
+				drawSpline(canvases[i].getContext('2d'), referencePoints, 'blue', 1);
+		}
+}
+
+function checkCanvas(index) {
+    if (index === correctIndex) {
+        canvases[index].classList.add('correct');
+        canvases[index].removeEventListener('click', () => checkCanvas(index));
+        
+        if (document.getElementById('autoDifficultyCheckbox').checked) {
+            increaseDifficulty();
+        }
+        
+        setTimeout(() => {
+            if (memoryMode) {
+                showReferenceCanvas();
+            }
+            generateGame();
+        }, 500);
+    } else {
+        canvases[index].classList.add('wrong');
+        canvases[index].removeEventListener('click', () => checkCanvas(index));
+    }
+}
+
+function showReferenceCanvas() {
+    canvases[0].style.display = 'inline-block';
+    for (let i = 1; i < numCanvases; i++) {
+        canvases[i].style.display = 'none';
+    }
+}
+
+function increaseDifficulty() {
+    const slider = document.getElementById('precisionSlider');
+    let newValue = parseInt(slider.value) - 1;
+    if (newValue < 0) newValue = 0;
+    slider.value = newValue;
+    updatePrecision(false);
+}
+
+
+window.addEventListener('resize', generateGame);
+document.getElementById('precisionSlider').addEventListener('input', updatePrecision);
+updatePrecision();
+document.getElementById('autoDifficultyCheckbox').checked = true;
+document.getElementById('helpButton').addEventListener('click', showHelp);
+document.getElementById('memoryModeCheckbox').addEventListener('change', function() {
+    memoryMode = this.checked;
+    generateGame();
+});
+
+
+generateGame();
+
+</script>
+</body>
+</html>
