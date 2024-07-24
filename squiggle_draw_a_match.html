@@ -63,7 +63,9 @@
 <script> // ==============================
 
 
-const numPoints = 8;
+const numPoints = 9;
+const nFixedBeg = 3;
+const nFixedEnd = 3;
 const minAngle = Math.PI * 0.15;
 const maxAngle = Math.PI * 0.8;
 const turnRange = maxAngle - minAngle;
@@ -133,8 +135,12 @@ function generateRandomPath(canvas) {
 
         let validPoint = false;
         while (!validPoint) {
-            const distance = (Math.random() * segmentLengthRange + minSegmentLength) * leftCanvas.width;
-            const turnAngle = (Math.random() * turnRange + minAngle) * (Math.random() < 0.5 ? 1 : -1);
+						let sl = segmentLengthRange;
+						if (i < nFixedBeg || i >= nFixedEnd) sl /= 2;
+						let ma = minAngle;
+						if (i < nFixedBeg || i >= nFixedEnd) ma *= 2;
+            const distance = (Math.random() * sl + minSegmentLength) * leftCanvas.width;
+            const turnAngle = (Math.random() * turnRange + ma) * (Math.random() < 0.5 ? 1 : -1);
             const newAngle = (angle + turnAngle + Math.PI * 2) % (Math.PI * 2);
             const newX = x + Math.cos(newAngle) * distance;
             const newY = y + Math.sin(newAngle) * distance;
@@ -152,7 +158,66 @@ function generateRandomPath(canvas) {
     return points;
 }
 
+function normalizePath(points) {
+	let minx = 9999;
+	let miny = 9999;
+	let maxx = 0;
+	let maxy = 0;
+	let cx = leftCanvas.width/2 ;
+	let cy = leftCanvas.height/2;
+	
+	//center
+	
+	points.forEach((p) => {
+		minx = Math.min(minx, p.x);
+		miny = Math.min(miny, p.y);
+		maxx = Math.max(maxx, p.x);
+		maxy = Math.max(maxy, p.y);
+	}); 
+	let offsetX = cx - (minx + maxx)/2;
+	let offsetY = cy - (miny + maxy)/2;
+	points.forEach((p) => {
+		p.x = p.x + offsetX;
+		p.y = p.y + offsetY;
+	});
+	
+	//scale
+	
+	let scalef = Math.min((leftCanvas.width - 20) / (maxx-minx), 
+												(leftCanvas.height - 20) / (maxy-miny)) ;
+	points.forEach((p) => {
+		p.x = cx + (p.x - cx) * scalef;
+		p.y = cy + (p.y - cy) * scalef;
+	});
+	
+	return points;
+}
+
+function drawGuides(ctx, points) {
+	ctx.beginPath();
+
+	for (let i = nFixedBeg; i < points.length - nFixedEnd; i++) {
+			ctx.moveTo(points[i].x, points[i].y);
+			let xc = (points[i].x + points[i - 1].x) / 2;
+			let yc = (points[i].y + points[i - 1].y) / 2;
+			ctx.lineTo(xc, yc);
+			
+			ctx.moveTo(points[i].x, points[i].y);
+			xc = (points[i].x + points[i + 1].x) / 2;
+			yc = (points[i].y + points[i + 1].y) / 2;
+			ctx.lineTo(xc, yc);
+	}
+
+	ctx.strokeStyle = 'gray';
+	ctx.lineWidth = 0.5;
+	ctx.stroke();
+}
+
+
 function drawSpline(ctx, points, showPoints = false, color = 'black', strokeWidth = 3) {
+		
+		if (showPoints) drawGuides(ctx, points);
+		
 		ctx.beginPath();
 		ctx.moveTo(points[0].x, points[0].y);
 
@@ -175,11 +240,9 @@ function drawSpline(ctx, points, showPoints = false, color = 'black', strokeWidt
 
 		if (showPoints) {
 				points.forEach((point, index) => {
-						if (index > 2 && index < points.length - 1) {
+						if (index >= nFixedBeg && index < points.length - nFixedEnd) {
 							ctx.beginPath();
 							ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
-							ctx.fillStyle = index < 3 ? 'gray' : 'red';
-							//ctx.fill();
 							ctx.strokeStyle = 'gray';
 							ctx.lineWidth = 1;
 							ctx.stroke();
@@ -192,17 +255,17 @@ function generateNewLine() {
     leftCtx.clearRect(0, 0, leftCanvas.width, leftCanvas.height);
     rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
 
-    originalPoints = generateRandomPath(leftCanvas);
+    originalPoints = normalizePath(generateRandomPath(leftCanvas));
     drawSpline(leftCtx, originalPoints);
 
     userPoints = originalPoints.map((point, index) => {
-        if (index < 3 || index == originalPoints.length - 1) {
+        if (index < nFixedBeg || index >= originalPoints.length - nFixedEnd) {
             return { x: point.x * scaleFactor, y: point.y * scaleFactor };
         } else {
             let x = 0; 
             let y = 0;
             do {
-                const displacement = (Math.random() * 0.05 + 0.1) * rightCanvas.width;
+                const displacement = (Math.random() * 0.025 + 0.05) * rightCanvas.width;
                 const angle = Math.random() * Math.PI * 2;
                 x = point.x * scaleFactor + Math.cos(angle) * displacement;
                 y = point.y * scaleFactor + Math.sin(angle) * displacement;
@@ -216,13 +279,14 @@ function generateNewLine() {
 }
 
 function evaluateDrawing() {
-		let totalError = 0;
+		/*let totalError = 0;
 		for (let i = 3; i < numPoints; i++) {
 				const dx = userPoints[i].x / scaleFactor - originalPoints[i].x;
 				const dy = userPoints[i].y / scaleFactor - originalPoints[i].y;
 				totalError += Math.sqrt(dx * dx + dy * dy);
 		}
 		//errorDisplay.textContent = `Total Error: ${totalError.toFixed(0)} pixels`;
+		*/
 		
 		drawSpline(leftCtx, originalPoints);
 		drawSpline(rightCtx, originalPoints.map(p => ({ x: p.x * scaleFactor, y: p.y * scaleFactor })), false, 'blue');
@@ -250,7 +314,7 @@ function startDragging(e) {
     const y = (e.clientY || e.touches[0].clientY) - rect.top;
     
     let minD = 55555;
-    for (let i = 3; i < userPoints.length - 1; i++) {
+    for (let i = nFixedBeg; i < userPoints.length - nFixedEnd; i++) {
         const point = userPoints[i];
         let d = (x - point.x) ** 2 + (y - point.y) ** 2;
         if (d < 55555) {
