@@ -14,6 +14,11 @@
             margin: 0;
             padding: 0;
             height: 100vh;
+						
+						user-select: none;
+						-webkit-user-select: none;
+						-moz-user-select: none;
+						-ms-user-select: none;
         }
         .canvas-container {
             display: flex;
@@ -63,9 +68,9 @@
 <script> // ==============================
 
 
-const numPoints = 9;
+const numPoints = 8;
 const nFixedBeg = 3;
-const nFixedEnd = 3;
+const nFixedEnd = 2;
 const minAngle = Math.PI * 0.15;
 const maxAngle = Math.PI * 0.8;
 const turnRange = maxAngle - minAngle;
@@ -129,29 +134,55 @@ function generateRandomPath(canvas) {
     let x = canvas.width / 2;
     let y = canvas.height / 2;
     let angle = Math.random() * Math.PI * 2;
+    const startX = x;
+    const startY = y;
 
     for (let i = 0; i < numPoints; i++) {
         points.push({ x, y });
 
         let validPoint = false;
-        while (!validPoint) {
-						let sl = segmentLengthRange;
-						if (i < nFixedBeg || i >= nFixedEnd) sl /= 2;
-						let ma = minAngle;
-						if (i < nFixedBeg || i >= nFixedEnd) ma *= 2;
-            const distance = (Math.random() * sl + minSegmentLength) * leftCanvas.width;
+        let attempts = 0;
+        const maxAttempts = 100;
+
+        while (!validPoint && attempts < maxAttempts) {
+            let sl = segmentLengthRange;
+            if (i < nFixedBeg || i >= numPoints - nFixedEnd) sl /= 2;
+            let ma = minAngle;
+            if (i < nFixedBeg || i >= numPoints - nFixedEnd) ma *= 2;
+            
+            const distance = (Math.random() * sl + minSegmentLength) * canvas.width;
             const turnAngle = (Math.random() * turnRange + ma) * (Math.random() < 0.5 ? 1 : -1);
             const newAngle = (angle + turnAngle + Math.PI * 2) % (Math.PI * 2);
-            const newX = x + Math.cos(newAngle) * distance;
-            const newY = y + Math.sin(newAngle) * distance;
+            let newX = x + Math.cos(newAngle) * distance;
+            let newY = y + Math.sin(newAngle) * distance;
             
             const border = 5;
             if (newX >= border && newX < canvas.width - border && newY >= border && newY < canvas.height - border) {
+                // For the last segment, adjust to close the path
+                if (i === numPoints - 1) {
+                    const distToStart = Math.sqrt((newX - startX)**2 + (newY - startY)**2);
+                    if (distToStart <= distance * 1.5 && distToStart >= distance * 0.5) {
+                        newX = startX;
+                        newY = startY;
+                        validPoint = true;
+                    }
+                } else {
+                    validPoint = true;
+                }
+            }
+
+            if (validPoint) {
                 x = newX;
                 y = newY;
                 angle = newAngle;
-                validPoint = true;
             }
+
+            attempts++;
+        }
+
+        if (attempts >= maxAttempts) {
+            // If we can't find a valid point, restart the process
+            return generateRandomPath(canvas);
         }
     }
 
@@ -219,24 +250,32 @@ function drawSpline(ctx, points, showPoints = false, color = 'black', strokeWidt
 		if (showPoints) drawGuides(ctx, points);
 		
 		ctx.beginPath();
-		ctx.moveTo(points[0].x, points[0].y);
+		
+		// Start from the midpoint between the last and first point
+    const lastPoint = points[points.length - 1];
+    const firstPoint = points[0];
+    let midX = (lastPoint.x + firstPoint.x) / 2;
+    let midY = (lastPoint.y + firstPoint.y) / 2;
+    ctx.moveTo(midX, midY);
 
-		for (let i = 1; i < points.length - 2; i++) {
-				const xc = (points[i].x + points[i + 1].x) / 2;
-				const yc = (points[i].y + points[i + 1].y) / 2;
-				ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
-		}
+    // Draw the first curve
+    ctx.quadraticCurveTo(firstPoint.x, firstPoint.y, (firstPoint.x + points[1].x) / 2, (firstPoint.y + points[1].y) / 2);
 
-		ctx.quadraticCurveTo(
-				points[points.length - 2].x,
-				points[points.length - 2].y,
-				points[points.length - 1].x,
-				points[points.length - 1].y
-		);
+    // Draw curves for the rest of the points
+    for (let i = 1; i < points.length; i++) {
+        const p0 = points[i];
+        const p1 = points[(i + 1) % points.length]; // Wrap around to the first point
+        midX = (p0.x + p1.x) / 2;
+        midY = (p0.y + p1.y) / 2;
+        ctx.quadraticCurveTo(p0.x, p0.y, midX, midY);
+    }
+		ctx.closePath();
+
 
 		ctx.strokeStyle = color;
 		ctx.lineWidth = strokeWidth * (ctx == rightCtx ? scaleFactor : 1);
 		ctx.stroke();
+
 
 		if (showPoints) {
 				points.forEach((point, index) => {
