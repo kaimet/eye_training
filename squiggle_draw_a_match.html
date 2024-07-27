@@ -101,26 +101,37 @@ function resizeCanvases() {
     let leftSize, rightSize;
 
     if (isLandscape) {
-        let s = Math.min(containerHeight, containerWidth * 0.5);
-				leftSize = s * 3/4;
+        let s = Math.floor(Math.min(containerHeight, containerWidth * 0.5));
+        leftSize = Math.floor(s * 3/4);
         rightSize = s;
     } else {
-        let s = Math.min(containerWidth, containerHeight * 0.5);
-				leftSize = s * 3/4;
+        let s = Math.floor(Math.min(containerWidth, containerHeight * 0.5));
+        leftSize = Math.floor(s * 3/4);
         rightSize = s;
     }
 
+    const oldLeftSize = leftCanvas.width;
+    const oldRightSize = rightCanvas.width;
     leftCanvas.width = leftCanvas.height = leftSize;
     rightCanvas.width = rightCanvas.height = rightSize;
 
     scaleFactor = rightCanvas.width / leftCanvas.width;
 
-    // Redraw canvases
     if (originalPoints.length > 0) {
+        scalePoints(originalPoints, oldLeftSize, leftSize);
         drawSpline(leftCtx, originalPoints);
     }
     if (userPoints.length > 0) {
+        scalePoints(userPoints, oldRightSize, rightSize);
         drawSpline(rightCtx, userPoints, true);
+    }
+}
+
+function scalePoints(points, oldSize, newSize) {
+    const scaleFactor = newSize / oldSize;
+    for (let point of points) {
+        point.x = Math.round(point.x * scaleFactor);
+        point.y = Math.round(point.y * scaleFactor);
     }
 }
 
@@ -156,7 +167,7 @@ function generateRandomPath(canvas) {
             let newX = x + Math.cos(newAngle) * distance;
             let newY = y + Math.sin(newAngle) * distance;
             
-            const border = 5;
+            const border = 0;
             if (newX >= border && newX < canvas.width - border && newY >= border && newY < canvas.height - border) {
                 // For the last segment, adjust to close the path
                 if (i === numPoints - 1) {
@@ -189,13 +200,13 @@ function generateRandomPath(canvas) {
     return points;
 }
 
-function normalizePath(points) {
+function normalizePath(points, canvas = leftCanvas) {
 	let minx = 9999;
 	let miny = 9999;
 	let maxx = 0;
 	let maxy = 0;
-	let cx = leftCanvas.width/2 ;
-	let cy = leftCanvas.height/2;
+	let cx = canvas.width/2 ;
+	let cy = canvas.height/2;
 	
 	//center
 	
@@ -214,8 +225,9 @@ function normalizePath(points) {
 	
 	//scale
 	
-	let scalef = Math.min((leftCanvas.width - 20) / (maxx-minx), 
-												(leftCanvas.height - 20) / (maxy-miny)) ;
+	let border = 0;
+	let scalef = Math.min((canvas.width-border) / (maxx-minx), 
+												(canvas.height-border) / (maxy-miny)) ;
 	points.forEach((p) => {
 		p.x = cx + (p.x - cx) * scalef;
 		p.y = cy + (p.y - cy) * scalef;
@@ -224,6 +236,7 @@ function normalizePath(points) {
 	return points;
 }
 
+// not used
 function drawGuides(ctx, points) {
 	ctx.beginPath();
 
@@ -244,10 +257,45 @@ function drawGuides(ctx, points) {
 	ctx.stroke();
 }
 
+function drawPoints(ctx, points) {
+	points.forEach((point, index) => {
+			if (index >= nFixedBeg && index < points.length - nFixedEnd) {
+					/*// original control point
+					ctx.beginPath();
+					ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+					ctx.strokeStyle = 'gray';
+					ctx.lineWidth = 1;
+					ctx.stroke();
+					*/
+
+					// projected point
+					const prevPoint = points[(index - 1 + points.length) % points.length];
+					const nextPoint = points[(index + 1) % points.length];
+					const midPoint1 = {
+							x: (prevPoint.x + point.x) / 2,
+							y: (prevPoint.y + point.y) / 2
+					};
+					const midPoint2 = {
+							x: (point.x + nextPoint.x) / 2,
+							y: (point.y + nextPoint.y) / 2
+					};
+					const projectedPoint = findClosestPointOnCurve(midPoint1, point, midPoint2).point;
+
+					ctx.beginPath();
+					const r = 6 + rightCanvas.width * 0.01;
+					ctx.arc(projectedPoint.x, projectedPoint.y, r, 0, Math.PI * 2);
+					ctx.strokeStyle = 'gray';
+					ctx.lineWidth = 2;
+					ctx.stroke();
+			}
+	});
+}
+
 
 function drawSpline(ctx, points, showPoints = false, color = 'black', strokeWidth = 3) {
 		
-		if (showPoints) drawGuides(ctx, points);
+		//if (showPoints) drawGuides(ctx, points);
+		if (showPoints) drawPoints(ctx, points);
 		
 		ctx.beginPath();
 		
@@ -275,19 +323,6 @@ function drawSpline(ctx, points, showPoints = false, color = 'black', strokeWidt
 		ctx.strokeStyle = color;
 		ctx.lineWidth = strokeWidth * (ctx == rightCtx ? scaleFactor : 1);
 		ctx.stroke();
-
-
-		if (showPoints) {
-				points.forEach((point, index) => {
-						if (index >= nFixedBeg && index < points.length - nFixedEnd) {
-							ctx.beginPath();
-							ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
-							ctx.strokeStyle = 'gray';
-							ctx.lineWidth = 1;
-							ctx.stroke();
-						}
-				});
-		}
 }
 
 function generateNewLine() {
@@ -335,6 +370,45 @@ generateBtn.addEventListener('click', generateNewLine);
 evaluateBtn.addEventListener('click', evaluateDrawing);
 
 
+// Project a control point onto the curve
+function projectPointOnCurve(p0, p1, p2, t) {
+    const x = (1-t)*(1-t)*p0.x + 2*(1-t)*t*p1.x + t*t*p2.x;
+    const y = (1-t)*(1-t)*p0.y + 2*(1-t)*t*p1.y + t*t*p2.y;
+    return {x, y};
+}
+
+// Find the closest point on the curve to the control point
+function findClosestPointOnCurve(p0, p1, p2) {
+    let minDist = Infinity;
+    let bestT = 0;
+    let bestPoint = null;
+
+    for (let t = 0; t <= 1; t += 0.01) {
+        const point = projectPointOnCurve(p0, p1, p2, t);
+        const dist = Math.sqrt((point.x - p1.x)**2 + (point.y - p1.y)**2);
+        if (dist < minDist) {
+            minDist = dist;
+            bestT = t;
+            bestPoint = point;
+        }
+    }
+
+    return {point: bestPoint, t: bestT};
+}
+
+// not used
+// Lift a point from the curve to its corresponding control point
+function liftPointFromCurve(p0, p2, curvePoint) {
+    // Solve the quadratic Bézier equation for the control point
+    const t = findClosestPointOnCurve(p0, curvePoint, p2).t;
+    if (t === 0 || t === 1) return curvePoint; // Edge case
+
+    const x = (curvePoint.x - (1-t)*(1-t)*p0.x - t*t*p2.x) / (2*(1-t)*t);
+    const y = (curvePoint.y - (1-t)*(1-t)*p0.y - t*t*p2.y) / (2*(1-t)*t);
+
+    return {x, y};
+}
+
 
 let draggingPoint = null;
 let dragOffsetX = 0;
@@ -352,18 +426,16 @@ function startDragging(e) {
     const x = (e.clientX || e.touches[0].clientX) - rect.left;
     const y = (e.clientY || e.touches[0].clientY) - rect.top;
     
-    let minD = 55555;
+    let minD = Infinity;
     for (let i = nFixedBeg; i < userPoints.length - nFixedEnd; i++) {
         const point = userPoints[i];
         let d = (x - point.x) ** 2 + (y - point.y) ** 2;
-        if (d < 55555) {
-            if (d < minD) {
-                minD = d;
-                draggingPoint = i;
-                dragOffsetX = point.x - x;
-                dragOffsetY = point.y - y;
-            }
-        }
+				if (d < minD) {
+						minD = d;
+						draggingPoint = i;
+						dragOffsetX = point.x - x;
+						dragOffsetY = point.y - y;
+				}
     }
 }
 
@@ -399,6 +471,7 @@ function handleTouch(e) {
 
 
 resizeCanvases();
+//window.addEventListener('load', resizeCanvases);
 window.addEventListener('resize', resizeCanvases);
 window.addEventListener('orientationchange', resizeCanvases);
 
