@@ -258,37 +258,46 @@ function drawGuides(ctx, points) {
 }
 
 function drawPoints(ctx, points) {
-	points.forEach((point, index) => {
-			if (index >= nFixedBeg && index < points.length - nFixedEnd) {
-					/*// original control point
-					ctx.beginPath();
-					ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
-					ctx.strokeStyle = 'gray';
-					ctx.lineWidth = 1;
-					ctx.stroke();
-					*/
+    const r = 2 + rightCanvas.width * 0.01;
+		const POINT_DISTANCE = r + 4; // Distance of points from the curve
 
-					// projected point
-					const prevPoint = points[(index - 1 + points.length) % points.length];
-					const nextPoint = points[(index + 1) % points.length];
-					const midPoint1 = {
-							x: (prevPoint.x + point.x) / 2,
-							y: (prevPoint.y + point.y) / 2
-					};
-					const midPoint2 = {
-							x: (point.x + nextPoint.x) / 2,
-							y: (point.y + nextPoint.y) / 2
-					};
-					const projectedPoint = findClosestPointOnCurve(midPoint1, point, midPoint2).point;
+    points.forEach((point, index) => {
+        if (index >= nFixedBeg && index < points.length - nFixedEnd) {
+            const prevPoint = points[(index - 1 + points.length) % points.length];
+            const nextPoint = points[(index + 1) % points.length];
+            const midPoint1 = {
+                x: (prevPoint.x + point.x) / 2,
+                y: (prevPoint.y + point.y) / 2
+            };
+            const midPoint2 = {
+                x: (point.x + nextPoint.x) / 2,
+                y: (point.y + nextPoint.y) / 2
+            };
+            const projectedPoint = findClosestPointOnCurve(midPoint1, point, midPoint2).point;
 
-					ctx.beginPath();
-					const r = 6 + rightCanvas.width * 0.01;
-					ctx.arc(projectedPoint.x, projectedPoint.y, r, 0, Math.PI * 2);
-					ctx.strokeStyle = 'gray';
-					ctx.lineWidth = 2;
-					ctx.stroke();
-			}
-	});
+            // Calculate the direction vector from the projected point to the original point
+            const dirX = point.x - projectedPoint.x;
+            const dirY = point.y - projectedPoint.y;
+            
+            // Normalize the direction vector
+            const length = Math.sqrt(dirX * dirX + dirY * dirY);
+            const normalizedDirX = dirX / length;
+            const normalizedDirY = dirY / length;
+
+            // Calculate the offset point
+            const offsetPoint = {
+                x: projectedPoint.x + normalizedDirX * POINT_DISTANCE,
+                y: projectedPoint.y + normalizedDirY * POINT_DISTANCE
+            };
+
+            // Draw the offset point
+            ctx.beginPath();
+            ctx.arc(offsetPoint.x, offsetPoint.y, r, 0, Math.PI * 2);
+            ctx.strokeStyle = 'gray';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+    });
 }
 
 
