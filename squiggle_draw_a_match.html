@@ -257,9 +257,24 @@ function drawGuides(ctx, points) {
 	ctx.stroke();
 }
 
+// not used
+function drawControlPoints(ctx, points) {
+	points.forEach((point, index) => {
+			if (index >= nFixedBeg && index < points.length - nFixedEnd) {
+				ctx.beginPath();
+				ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+				ctx.strokeStyle = 'gray';
+				ctx.lineWidth = 1;
+				ctx.stroke();
+			}
+	});
+	drawGuides(ctx, points);
+}
+
 function drawPoints(ctx, points) {
     const r = 2 + rightCanvas.width * 0.01;
-		const POINT_DISTANCE = r + 4; // Distance of points from the curve
+    const POINT_DISTANCE = r + 4; // Distance of points from the curve
+    const EPSILON = 1e-6; // Small value to avoid division by zero
 
     points.forEach((point, index) => {
         if (index >= nFixedBeg && index < points.length - nFixedEnd) {
@@ -276,13 +291,24 @@ function drawPoints(ctx, points) {
             const projectedPoint = findClosestPointOnCurve(midPoint1, point, midPoint2).point;
 
             // Calculate the direction vector from the projected point to the original point
-            const dirX = point.x - projectedPoint.x;
-            const dirY = point.y - projectedPoint.y;
+            let dirX = point.x - projectedPoint.x;
+            let dirY = point.y - projectedPoint.y;
             
+            // Calculate the length of the direction vector
+            let length = Math.sqrt(dirX * dirX + dirY * dirY);
+
+            // If the point is very close to the curve, use the perpendicular to the curve instead
+            if (length < 3) {
+                const tangentX = midPoint1.x - midPoint2.x;
+                const tangentY = midPoint1.y - midPoint2.y;
+                dirX = -tangentY;
+                dirY = tangentX;
+								length = Math.sqrt(dirX * dirX + dirY * dirY);
+            }
+
             // Normalize the direction vector
-            const length = Math.sqrt(dirX * dirX + dirY * dirY);
-            const normalizedDirX = dirX / length;
-            const normalizedDirY = dirY / length;
+            const normalizedDirX = dirX / (length + EPSILON);
+            const normalizedDirY = dirY / (length + EPSILON);
 
             // Calculate the offset point
             const offsetPoint = {
@@ -296,6 +322,10 @@ function drawPoints(ctx, points) {
             ctx.strokeStyle = 'gray';
             ctx.lineWidth = 1;
             ctx.stroke();
+            if (index == draggingPoint) {
+                ctx.fillStyle = 'gray';
+                ctx.fill();
+            }
         }
     });
 }
@@ -361,49 +391,83 @@ function generateNewLine() {
     drawSpline(rightCtx, userPoints, true);
 }
 
-function evaluateDrawing() {
-		/*let totalError = 0;
-		for (let i = 3; i < numPoints; i++) {
-				const dx = userPoints[i].x / scaleFactor - originalPoints[i].x;
-				const dy = userPoints[i].y / scaleFactor - originalPoints[i].y;
-				totalError += Math.sqrt(dx * dx + dy * dy);
-		}
-		//errorDisplay.textContent = `Total Error: ${totalError.toFixed(0)} pixels`;
-		*/
-		
-		drawSpline(leftCtx, originalPoints);
-		drawSpline(rightCtx, originalPoints.map(p => ({ x: p.x * scaleFactor, y: p.y * scaleFactor })), false, 'blue');
-}
-
-generateBtn.addEventListener('click', generateNewLine);
-evaluateBtn.addEventListener('click', evaluateDrawing);
 
 
-// Project a control point onto the curve
-function projectPointOnCurve(p0, p1, p2, t) {
+function pointOnCurve(p0, p1, p2, t) {
     const x = (1-t)*(1-t)*p0.x + 2*(1-t)*t*p1.x + t*t*p2.x;
     const y = (1-t)*(1-t)*p0.y + 2*(1-t)*t*p1.y + t*t*p2.y;
     return {x, y};
 }
 
-// Find the closest point on the curve to the control point
+function distanceSquared(p1, p2) {
+    return (p1.x - p2.x)**2 + (p1.y - p2.y)**2;
+}
+
+function findClosestPointOnCurve(p0, p1, p2) {
+    const COARSE_STEP = 0.1;
+    let minDist = Infinity;
+    let bestT = 0;
+
+    // Coarse search
+    for (let t = 0; t <= 1; t += COARSE_STEP) {
+        const point = pointOnCurve(p0, p1, p2, t);
+        const dist = distanceSquared(point, p1);
+        if (dist < minDist) {
+            minDist = dist;
+            bestT = t;
+        }
+    }
+
+    // Fine search using binary search
+    let left = Math.max(0, bestT - COARSE_STEP);
+    let right = Math.min(1, bestT + COARSE_STEP);
+		
+		let precision = Infinity;
+    while (precision > 0.9) { // withing 1 pixel
+        const leftT = left + (right - left) / 3;
+        const rightT = right - (right - left) / 3;
+
+        const leftPoint = pointOnCurve(p0, p1, p2, leftT);
+        const rightPoint = pointOnCurve(p0, p1, p2, rightT);
+				
+				precision = distanceSquared(leftPoint, rightPoint);
+
+        const leftDist = distanceSquared(leftPoint, p1);
+        const rightDist = distanceSquared(rightPoint, p1);
+				
+        if (leftDist < rightDist) {
+            right = rightT;
+        } else {
+            left = leftT;
+        }
+    }
+
+    bestT = (left + right) / 2;
+    const bestPoint = pointOnCurve(p0, p1, p2, bestT);
+
+    return {point: bestPoint, t: bestT};
+}
+
+// Previous simpler function 
+/*
 function findClosestPointOnCurve(p0, p1, p2) {
     let minDist = Infinity;
     let bestT = 0;
     let bestPoint = null;
 
     for (let t = 0; t <= 1; t += 0.01) {
-        const point = projectPointOnCurve(p0, p1, p2, t);
-        const dist = Math.sqrt((point.x - p1.x)**2 + (point.y - p1.y)**2);
-        if (dist < minDist) {
-            minDist = dist;
+        const point = pointOnCurve(p0, p1, p2, t);
+        const dist2 = (point.x - p1.x)**2 + (point.y - p1.y)**2;
+        if (dist2 < minDist) {
+            minDist = dist2;
             bestT = t;
             bestPoint = point;
         }
     }
 
     return {point: bestPoint, t: bestT};
-}
+}*/
+
 
 // not used
 // Lift a point from the curve to its corresponding control point
@@ -417,6 +481,23 @@ function liftPointFromCurve(p0, p2, curvePoint) {
 
     return {x, y};
 }
+
+function evaluateDrawing() {
+		// calculation of an error not used, just drawing of the original curve
+		
+		/*let totalError = 0;
+		for (let i = 3; i < numPoints; i++) {
+				const dx = userPoints[i].x / scaleFactor - originalPoints[i].x;
+				const dy = userPoints[i].y / scaleFactor - originalPoints[i].y;
+				totalError += Math.sqrt(dx * dx + dy * dy);
+		}
+		//errorDisplay.textContent = `Total Error: ${totalError.toFixed(0)} pixels`;
+		*/
+		
+		drawSpline(leftCtx, originalPoints);
+		drawSpline(rightCtx, originalPoints.map(p => ({ x: p.x * scaleFactor, y: p.y * scaleFactor })), false, 'blue');
+}
+
 
 
 let draggingPoint = null;
@@ -466,6 +547,8 @@ function stopDragging() {
     draggingPoint = null;
     dragOffsetX = 0;
     dragOffsetY = 0;
+		rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
+		drawSpline(rightCtx, userPoints, true); // for crearing dragged point
 }
 
 function handleTouch(e) {
@@ -479,10 +562,15 @@ function handleTouch(e) {
 
 
 
+generateBtn.addEventListener('click', generateNewLine);
+evaluateBtn.addEventListener('click', evaluateDrawing);
+
 resizeCanvases();
 //window.addEventListener('load', resizeCanvases);
 window.addEventListener('resize', resizeCanvases);
 window.addEventListener('orientationchange', resizeCanvases);
+
+
 
 generateNewLine();
 
