@@ -48,6 +48,29 @@
         #mainPageLink {
             margin-top: 10px;
         }
+				.time-limit-container {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        #timeLimitCheckbox {
+            margin-right: 10px;
+        }
+        #progressBar {
+            width: 200px;
+            height: 20px;
+						margin-left: 10px;
+            background-color: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+        }
+        #progressBarFill {
+            width: 100%;
+            height: 100%;
+            background-color: #4CAF50;
+            transition: width 0.1s linear;
+        }
     </style>
 </head>
 <body>
@@ -59,22 +82,26 @@
         <button id="generateBtn">New</button>
         <button id="evaluateBtn">Evaluate</button>
     </div>
-		<br>
-		<a href="squiggle_find_a_match.html">squiggle match</a>
-		<br>
+    <div class="time-limit-container">
+        <input type="checkbox" id="timeLimitCheckbox">
+        <label for="timeLimitCheckbox">Time limit</label>
+        <div id="progressBar"><div id="progressBarFill"></div></div>
+    </div>
+    <br>
+    <a href="squiggle_find_a_match.html">squiggle match</a>
     <a id="mainPageLink" href="index.html">home page</a>
 
 
 <script> // ==============================
 
 
-const numPoints = 8;
+const numPoints = 9;
 const nFixedBeg = 3;
-const nFixedEnd = 2;
+const nFixedEnd = 3;
 const minAngle = Math.PI * 0.15;
 const maxAngle = Math.PI * 0.8;
 const turnRange = maxAngle - minAngle;
-const minSegmentLength = 0.25; // in square side length
+const minSegmentLength = 0.25; // in canvas size
 const maxSegmentLength = 0.7;
 const segmentLengthRange = maxSegmentLength - minSegmentLength;
 
@@ -94,45 +121,45 @@ const canvasContainer = document.querySelector('.canvas-container');
 let isLandscape = window.innerWidth > window.innerHeight;
 
 function resizeCanvases() {
-    const containerWidth = canvasContainer.clientWidth;
-    const containerHeight = canvasContainer.clientHeight;
-    isLandscape = containerWidth > containerHeight;
+	const containerWidth = canvasContainer.clientWidth;
+	const containerHeight = canvasContainer.clientHeight;
+	isLandscape = containerWidth > containerHeight;
 
-    let leftSize, rightSize;
+	let leftSize, rightSize;
 
-    if (isLandscape) {
-        let s = Math.floor(Math.min(containerHeight, containerWidth * 0.5));
-        leftSize = Math.floor(s * 3/4);
-        rightSize = s;
-    } else {
-        let s = Math.floor(Math.min(containerWidth, containerHeight * 0.5));
-        leftSize = Math.floor(s * 3/4);
-        rightSize = s;
-    }
+	if (isLandscape) {
+		let s = Math.floor(Math.min(containerHeight, containerWidth * 0.5));
+		leftSize = Math.floor(s * 3/4);
+		rightSize = s;
+	} else {
+		let s = Math.floor(Math.min(containerWidth, containerHeight * 0.5));
+		leftSize = Math.floor(s * 3/4);
+		rightSize = s;
+	}
 
-    const oldLeftSize = leftCanvas.width;
-    const oldRightSize = rightCanvas.width;
-    leftCanvas.width = leftCanvas.height = leftSize;
-    rightCanvas.width = rightCanvas.height = rightSize;
+	const oldLeftSize = leftCanvas.width;
+	const oldRightSize = rightCanvas.width;
+	leftCanvas.width = leftCanvas.height = leftSize;
+	rightCanvas.width = rightCanvas.height = rightSize;
 
-    scaleFactor = rightCanvas.width / leftCanvas.width;
+	scaleFactor = rightCanvas.width / leftCanvas.width;
 
-    if (originalPoints.length > 0) {
-        scalePoints(originalPoints, oldLeftSize, leftSize);
-        drawSpline(leftCtx, originalPoints);
-    }
-    if (userPoints.length > 0) {
-        scalePoints(userPoints, oldRightSize, rightSize);
-        drawSpline(rightCtx, userPoints, true);
-    }
+	if (originalPoints.length > 0) {
+			scalePoints(originalPoints, oldLeftSize, leftSize);
+			drawSpline(leftCtx, originalPoints);
+	}
+	if (userPoints.length > 0) {
+			scalePoints(userPoints, oldRightSize, rightSize);
+			drawSpline(rightCtx, userPoints, true);
+	}
 }
 
 function scalePoints(points, oldSize, newSize) {
-    const scaleFactor = newSize / oldSize;
-    for (let point of points) {
-        point.x = Math.round(point.x * scaleFactor);
-        point.y = Math.round(point.y * scaleFactor);
-    }
+	const scaleFactor = newSize / oldSize;
+	for (let point of points) {
+		point.x = Math.round(point.x * scaleFactor);
+		point.y = Math.round(point.y * scaleFactor);
+	}
 }
 
 
@@ -141,63 +168,63 @@ let userPoints = [];
 				
 
 function generateRandomPath(canvas) {
-    const points = [];
-    let x = canvas.width / 2;
-    let y = canvas.height / 2;
-    let angle = Math.random() * Math.PI * 2;
-    const startX = x;
-    const startY = y;
+	const points = [];
+	let x = canvas.width / 2;
+	let y = canvas.height / 2;
+	let angle = Math.random() * Math.PI * 2;
+	const startX = x;
+	const startY = y;
 
-    for (let i = 0; i < numPoints; i++) {
-        points.push({ x, y });
+	for (let i = 0; i < numPoints; i++) {
+		points.push({ x, y });
 
-        let validPoint = false;
-        let attempts = 0;
-        const maxAttempts = 100;
+		let validPoint = false;
+		let attempts = 0;
+		const maxAttempts = 100;
 
-        while (!validPoint && attempts < maxAttempts) {
-            let sl = segmentLengthRange;
-            if (i < nFixedBeg || i >= numPoints - nFixedEnd) sl /= 2;
-            let ma = minAngle;
-            if (i < nFixedBeg || i >= numPoints - nFixedEnd) ma *= 2;
-            
-            const distance = (Math.random() * sl + minSegmentLength) * canvas.width;
-            const turnAngle = (Math.random() * turnRange + ma) * (Math.random() < 0.5 ? 1 : -1);
-            const newAngle = (angle + turnAngle + Math.PI * 2) % (Math.PI * 2);
-            let newX = x + Math.cos(newAngle) * distance;
-            let newY = y + Math.sin(newAngle) * distance;
-            
-            const border = 0;
-            if (newX >= border && newX < canvas.width - border && newY >= border && newY < canvas.height - border) {
-                // For the last segment, adjust to close the path
-                if (i === numPoints - 1) {
-                    const distToStart = Math.sqrt((newX - startX)**2 + (newY - startY)**2);
-                    if (distToStart <= distance * 1.5 && distToStart >= distance * 0.5) {
-                        newX = startX;
-                        newY = startY;
-                        validPoint = true;
-                    }
-                } else {
-                    validPoint = true;
-                }
-            }
+		while (!validPoint && attempts < maxAttempts) {
+			let sl = segmentLengthRange;
+			if (i < nFixedBeg || i >= numPoints - nFixedEnd) sl /= 2;
+			let ma = minAngle;
+			if (i < nFixedBeg || i >= numPoints - nFixedEnd) ma *= 2;
+			
+			const distance = (Math.random() * sl + minSegmentLength) * canvas.width;
+			const turnAngle = (Math.random() * turnRange + ma) * (Math.random() < 0.5 ? 1 : -1);
+			const newAngle = (angle + turnAngle + Math.PI * 2) % (Math.PI * 2);
+			let newX = x + Math.cos(newAngle) * distance;
+			let newY = y + Math.sin(newAngle) * distance;
+			
+			const border = 0;
+			if (newX >= border && newX < canvas.width - border && newY >= border && newY < canvas.height - border) {
+				// For the last segment, adjust to close the path
+				if (i === numPoints - 1) {
+					const distToStart = Math.sqrt((newX - startX)**2 + (newY - startY)**2);
+					if (distToStart <= distance * 1.5 && distToStart >= distance * 0.5) {
+							newX = startX;
+							newY = startY;
+							validPoint = true;
+					}
+				} else {
+					validPoint = true;
+				}
+			}
 
-            if (validPoint) {
-                x = newX;
-                y = newY;
-                angle = newAngle;
-            }
+			if (validPoint) {
+					x = newX;
+					y = newY;
+					angle = newAngle;
+			}
 
-            attempts++;
-        }
+			attempts++;
+		}
 
-        if (attempts >= maxAttempts) {
-            // If we can't find a valid point, restart the process
-            return generateRandomPath(canvas);
-        }
-    }
+		if (attempts >= maxAttempts) {
+				// If we can't find a valid point, restart the process
+				return generateRandomPath(canvas);
+		}
+	}
 
-    return points;
+	return points;
 }
 
 function normalizePath(points, canvas = leftCanvas) {
@@ -241,15 +268,15 @@ function drawGuides(ctx, points) {
 	ctx.beginPath();
 
 	for (let i = nFixedBeg; i < points.length - nFixedEnd; i++) {
-			ctx.moveTo(points[i].x, points[i].y);
-			let xc = (points[i].x + points[i - 1].x) / 2;
-			let yc = (points[i].y + points[i - 1].y) / 2;
-			ctx.lineTo(xc, yc);
-			
-			ctx.moveTo(points[i].x, points[i].y);
-			xc = (points[i].x + points[i + 1].x) / 2;
-			yc = (points[i].y + points[i + 1].y) / 2;
-			ctx.lineTo(xc, yc);
+		ctx.moveTo(points[i].x, points[i].y);
+		let xc = (points[i].x + points[i - 1].x) / 2;
+		let yc = (points[i].y + points[i - 1].y) / 2;
+		ctx.lineTo(xc, yc);
+		
+		ctx.moveTo(points[i].x, points[i].y);
+		xc = (points[i].x + points[i + 1].x) / 2;
+		yc = (points[i].y + points[i + 1].y) / 2;
+		ctx.lineTo(xc, yc);
 	}
 
 	ctx.strokeStyle = 'gray';
@@ -260,242 +287,241 @@ function drawGuides(ctx, points) {
 // not used
 function drawControlPoints(ctx, points) {
 	points.forEach((point, index) => {
-			if (index >= nFixedBeg && index < points.length - nFixedEnd) {
-				ctx.beginPath();
-				ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
-				ctx.strokeStyle = 'gray';
-				ctx.lineWidth = 1;
-				ctx.stroke();
-			}
+		if (index >= nFixedBeg && index < points.length - nFixedEnd) {
+			ctx.beginPath();
+			ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+			ctx.strokeStyle = 'gray';
+			ctx.lineWidth = 1;
+			ctx.stroke();
+		}
 	});
 	drawGuides(ctx, points);
 }
 
 function drawPoints(ctx, points) {
-    const r = 2 + rightCanvas.width * 0.01;
-    const POINT_DISTANCE = r + 4; // Distance of points from the curve
-    const EPSILON = 1e-6; // Small value to avoid division by zero
+	for (let i = nFixedBeg; i < userPoints.length - nFixedEnd; i++) {
+		offsetPoint = interactPoint(points, i);
+		
+		ctx.beginPath();
+		ctx.arc(offsetPoint.x, offsetPoint.y, pointRad(), 0, Math.PI * 2);
+		ctx.strokeStyle = 'gray';
+		ctx.lineWidth = 1;
+		ctx.stroke();
+		if (i == draggingPoint) {
+				ctx.fillStyle = 'gray';
+				ctx.fill();
+		}
+	}
+}
 
-    points.forEach((point, index) => {
-        if (index >= nFixedBeg && index < points.length - nFixedEnd) {
-            const prevPoint = points[(index - 1 + points.length) % points.length];
-            const nextPoint = points[(index + 1) % points.length];
-            const midPoint1 = {
-                x: (prevPoint.x + point.x) / 2,
-                y: (prevPoint.y + point.y) / 2
-            };
-            const midPoint2 = {
-                x: (point.x + nextPoint.x) / 2,
-                y: (point.y + nextPoint.y) / 2
-            };
-            const projectedPoint = findClosestPointOnCurve(midPoint1, point, midPoint2).point;
+function interactPoint(points, index) {
+	const POINT_DISTANCE = pointRad() + 4; // Distance from the curve
+	const EPSILON = 1e-6; // to avoid division by zero
+	
+	const prevPoint = points[(index - 1 + points.length) % points.length];
+	const point = points[index];
+	const nextPoint = points[(index + 1) % points.length];
+	const midPoint1 = {
+			x: (prevPoint.x + point.x) / 2,
+			y: (prevPoint.y + point.y) / 2
+	};
+	const midPoint2 = {
+			x: (point.x + nextPoint.x) / 2,
+			y: (point.y + nextPoint.y) / 2
+	};
+	
+	const projectedPoint = findClosestPointOnCurve(midPoint1, point, midPoint2).point;
 
-            // Calculate the direction vector from the projected point to the original point
-            let dirX = point.x - projectedPoint.x;
-            let dirY = point.y - projectedPoint.y;
-            
-            // Calculate the length of the direction vector
-            let length = Math.sqrt(dirX * dirX + dirY * dirY);
+	// Calculate the direction vector from the projected point to the original point
+	let dirX = point.x - projectedPoint.x;
+	let dirY = point.y - projectedPoint.y;
+	
+	// Calculate the length of the direction vector
+	let length = Math.sqrt(dirX * dirX + dirY * dirY);
 
-            // If the point is very close to the curve, use the perpendicular to the curve instead
-            if (length < 3) {
-                const tangentX = midPoint1.x - midPoint2.x;
-                const tangentY = midPoint1.y - midPoint2.y;
-                dirX = -tangentY;
-                dirY = tangentX;
-								length = Math.sqrt(dirX * dirX + dirY * dirY);
-            }
+	// If the point is very close to the curve, use the perpendicular to the curve instead
+	if (length < 3) {
+			const tangentX = midPoint1.x - midPoint2.x;
+			const tangentY = midPoint1.y - midPoint2.y;
+			dirX = -tangentY;
+			dirY = tangentX;
+			length = Math.sqrt(dirX * dirX + dirY * dirY);
+	}
 
-            // Normalize the direction vector
-            const normalizedDirX = dirX / (length + EPSILON);
-            const normalizedDirY = dirY / (length + EPSILON);
+	// Normalize the direction vector
+	const normalizedDirX = dirX / (length + EPSILON);
+	const normalizedDirY = dirY / (length + EPSILON);
 
-            // Calculate the offset point
-            const offsetPoint = {
-                x: projectedPoint.x + normalizedDirX * POINT_DISTANCE,
-                y: projectedPoint.y + normalizedDirY * POINT_DISTANCE
-            };
+	// Calculate the offset point
+	const offsetPoint = {
+			x: projectedPoint.x + normalizedDirX * POINT_DISTANCE,
+			y: projectedPoint.y + normalizedDirY * POINT_DISTANCE
+	};
+	
+	return offsetPoint;
+}
 
-            // Draw the offset point
-            ctx.beginPath();
-            ctx.arc(offsetPoint.x, offsetPoint.y, r, 0, Math.PI * 2);
-            ctx.strokeStyle = 'gray';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-            if (index == draggingPoint) {
-                ctx.fillStyle = 'gray';
-                ctx.fill();
-            }
-        }
-    });
+function pointRad() {
+	return r = 2 + rightCanvas.width * 0.01;
 }
 
 
 function drawSpline(ctx, points, showPoints = false, color = 'black', strokeWidth = 3) {
-		
-		//if (showPoints) drawGuides(ctx, points);
-		if (showPoints) drawPoints(ctx, points);
-		
-		ctx.beginPath();
-		
-		// Start from the midpoint between the last and first point
-    const lastPoint = points[points.length - 1];
-    const firstPoint = points[0];
-    let midX = (lastPoint.x + firstPoint.x) / 2;
-    let midY = (lastPoint.y + firstPoint.y) / 2;
-    ctx.moveTo(midX, midY);
+	if (showPoints) drawPoints(ctx, points);
+	
+	ctx.beginPath();
+	
+	// Start from the midpoint between the last and first point
+	const lastPoint = points[points.length - 1];
+	const firstPoint = points[0];
+	let midX = (lastPoint.x + firstPoint.x) / 2;
+	let midY = (lastPoint.y + firstPoint.y) / 2;
+	ctx.moveTo(midX, midY);
 
-    // Draw the first curve
-    ctx.quadraticCurveTo(firstPoint.x, firstPoint.y, (firstPoint.x + points[1].x) / 2, (firstPoint.y + points[1].y) / 2);
+	// Draw the first curve
+	ctx.quadraticCurveTo(firstPoint.x, firstPoint.y, (firstPoint.x + points[1].x) / 2, (firstPoint.y + points[1].y) / 2);
 
-    // Draw curves for the rest of the points
-    for (let i = 1; i < points.length; i++) {
-        const p0 = points[i];
-        const p1 = points[(i + 1) % points.length]; // Wrap around to the first point
-        midX = (p0.x + p1.x) / 2;
-        midY = (p0.y + p1.y) / 2;
-        ctx.quadraticCurveTo(p0.x, p0.y, midX, midY);
-    }
-		ctx.closePath();
+	// Draw curves for the rest of the points
+	for (let i = 1; i < points.length; i++) {
+			const p0 = points[i];
+			const p1 = points[(i + 1) % points.length]; // Wrap around to the first point
+			midX = (p0.x + p1.x) / 2;
+			midY = (p0.y + p1.y) / 2;
+			ctx.quadraticCurveTo(p0.x, p0.y, midX, midY);
+	}
+	ctx.closePath();
 
-
-		ctx.strokeStyle = color;
-		ctx.lineWidth = strokeWidth * (ctx == rightCtx ? scaleFactor : 1);
-		ctx.stroke();
+	ctx.strokeStyle = color;
+	ctx.lineWidth = strokeWidth * (ctx == rightCtx ? scaleFactor : 1);
+	ctx.stroke();
 }
 
 function generateNewLine() {
-    leftCtx.clearRect(0, 0, leftCanvas.width, leftCanvas.height);
-    rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
+	leftCtx.clearRect(0, 0, leftCanvas.width, leftCanvas.height);
+	rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
 
-    originalPoints = normalizePath(generateRandomPath(leftCanvas));
-    drawSpline(leftCtx, originalPoints);
+	originalPoints = normalizePath(generateRandomPath(leftCanvas));
+	drawSpline(leftCtx, originalPoints);
 
-    userPoints = originalPoints.map((point, index) => {
-        if (index < nFixedBeg || index >= originalPoints.length - nFixedEnd) {
-            return { x: point.x * scaleFactor, y: point.y * scaleFactor };
-        } else {
-            let x = 0; 
-            let y = 0;
-            do {
-                const displacement = (Math.random() * 0.025 + 0.05) * rightCanvas.width;
-                const angle = Math.random() * Math.PI * 2;
-                x = point.x * scaleFactor + Math.cos(angle) * displacement;
-                y = point.y * scaleFactor + Math.sin(angle) * displacement;
-            } while (x < 0 || y < 0 || x > rightCanvas.width || y > rightCanvas.height);
-            
-            return {x: x, y: y};
-        }
-    });
+	userPoints = originalPoints.map((point, index) => {
+		if (index < nFixedBeg || index >= originalPoints.length - nFixedEnd) {
+			return { x: point.x * scaleFactor, y: point.y * scaleFactor };
+		} else {
+			let x = 0; 
+			let y = 0;
+			do {
+				const displacement = (Math.random() * 0.025 + 0.05) * rightCanvas.width;
+				const angle = Math.random() * Math.PI * 2;
+				x = point.x * scaleFactor + Math.cos(angle) * displacement;
+				y = point.y * scaleFactor + Math.sin(angle) * displacement;
+			} while (x < 0 || y < 0 || x > rightCanvas.width || y > rightCanvas.height);
+			
+			return {x: x, y: y};
+		}
+	});
 
-    drawSpline(rightCtx, userPoints, true);
+	drawSpline(rightCtx, userPoints, true);
+	
+	if (timeLimitCheckbox.checked) {
+			startTimer();
+	}
+	enableInteraction();
 }
 
 
 
 function pointOnCurve(p0, p1, p2, t) {
-    const x = (1-t)*(1-t)*p0.x + 2*(1-t)*t*p1.x + t*t*p2.x;
-    const y = (1-t)*(1-t)*p0.y + 2*(1-t)*t*p1.y + t*t*p2.y;
-    return {x, y};
+	const x = (1-t)*(1-t)*p0.x + 2*(1-t)*t*p1.x + t*t*p2.x;
+	const y = (1-t)*(1-t)*p0.y + 2*(1-t)*t*p1.y + t*t*p2.y;
+	return {x, y};
 }
 
 function distanceSquared(p1, p2) {
-    return (p1.x - p2.x)**2 + (p1.y - p2.y)**2;
+   return (p1.x - p2.x)**2 + (p1.y - p2.y)**2;
 }
 
 function findClosestPointOnCurve(p0, p1, p2) {
-    const COARSE_STEP = 0.1;
-    let minDist = Infinity;
-    let bestT = 0;
+	const COARSE_STEP = 0.1;
+	let minDist = Infinity;
+	let bestT = 0;
 
-    // Coarse search
-    for (let t = 0; t <= 1; t += COARSE_STEP) {
-        const point = pointOnCurve(p0, p1, p2, t);
-        const dist = distanceSquared(point, p1);
-        if (dist < minDist) {
-            minDist = dist;
-            bestT = t;
-        }
-    }
+	// Coarse search
+	for (let t = 0; t <= 1; t += COARSE_STEP) {
+			const point = pointOnCurve(p0, p1, p2, t);
+			const dist = distanceSquared(point, p1);
+			if (dist < minDist) {
+					minDist = dist;
+					bestT = t;
+			}
+	}
 
-    // Fine search using binary search
-    let left = Math.max(0, bestT - COARSE_STEP);
-    let right = Math.min(1, bestT + COARSE_STEP);
-		
-		let precision = Infinity;
-    while (precision > 0.9) { // withing 1 pixel
-        const leftT = left + (right - left) / 3;
-        const rightT = right - (right - left) / 3;
+	// Fine search using binary search
+	let left = Math.max(0, bestT - COARSE_STEP);
+	let right = Math.min(1, bestT + COARSE_STEP);
+	
+	let precision = Infinity;
+	while (precision > 0.9) { // withing 1 pixel
+			const leftT = left + (right - left) / 3;
+			const rightT = right - (right - left) / 3;
 
-        const leftPoint = pointOnCurve(p0, p1, p2, leftT);
-        const rightPoint = pointOnCurve(p0, p1, p2, rightT);
-				
-				precision = distanceSquared(leftPoint, rightPoint);
+			const leftPoint = pointOnCurve(p0, p1, p2, leftT);
+			const rightPoint = pointOnCurve(p0, p1, p2, rightT);
+			
+			precision = distanceSquared(leftPoint, rightPoint);
 
-        const leftDist = distanceSquared(leftPoint, p1);
-        const rightDist = distanceSquared(rightPoint, p1);
-				
-        if (leftDist < rightDist) {
-            right = rightT;
-        } else {
-            left = leftT;
-        }
-    }
+			const leftDist = distanceSquared(leftPoint, p1);
+			const rightDist = distanceSquared(rightPoint, p1);
+			
+			if (leftDist < rightDist) {
+					right = rightT;
+			} else {
+					left = leftT;
+			}
+	}
 
-    bestT = (left + right) / 2;
-    const bestPoint = pointOnCurve(p0, p1, p2, bestT);
+	bestT = (left + right) / 2;
+	const bestPoint = pointOnCurve(p0, p1, p2, bestT);
 
-    return {point: bestPoint, t: bestT};
+	return {point: bestPoint, t: bestT};
 }
 
-// Previous simpler function 
+// Previous simpler version 
 /*
 function findClosestPointOnCurve(p0, p1, p2) {
-    let minDist = Infinity;
-    let bestT = 0;
-    let bestPoint = null;
+	let minDist = Infinity;
+	let bestT = 0;
+	let bestPoint = null;
 
-    for (let t = 0; t <= 1; t += 0.01) {
-        const point = pointOnCurve(p0, p1, p2, t);
-        const dist2 = (point.x - p1.x)**2 + (point.y - p1.y)**2;
-        if (dist2 < minDist) {
-            minDist = dist2;
-            bestT = t;
-            bestPoint = point;
-        }
-    }
+	for (let t = 0; t <= 1; t += 0.01) {
+			const point = pointOnCurve(p0, p1, p2, t);
+			const dist2 = (point.x - p1.x)**2 + (point.y - p1.y)**2;
+			if (dist2 < minDist) {
+					minDist = dist2;
+					bestT = t;
+					bestPoint = point;
+			}
+	}
 
-    return {point: bestPoint, t: bestT};
+	return {point: bestPoint, t: bestT};
 }*/
 
 
 // not used
 // Lift a point from the curve to its corresponding control point
 function liftPointFromCurve(p0, p2, curvePoint) {
-    // Solve the quadratic Bézier equation for the control point
-    const t = findClosestPointOnCurve(p0, curvePoint, p2).t;
-    if (t === 0 || t === 1) return curvePoint; // Edge case
+	// Solve the quadratic Bézier equation for the control point
+	const t = findClosestPointOnCurve(p0, curvePoint, p2).t;
+	if (t === 0 || t === 1) return curvePoint; // Edge case
 
-    const x = (curvePoint.x - (1-t)*(1-t)*p0.x - t*t*p2.x) / (2*(1-t)*t);
-    const y = (curvePoint.y - (1-t)*(1-t)*p0.y - t*t*p2.y) / (2*(1-t)*t);
+	const x = (curvePoint.x - (1-t)*(1-t)*p0.x - t*t*p2.x) / (2*(1-t)*t);
+	const y = (curvePoint.y - (1-t)*(1-t)*p0.y - t*t*p2.y) / (2*(1-t)*t);
 
-    return {x, y};
+	return {x, y};
 }
 
 function evaluateDrawing() {
-		// calculation of an error not used, just drawing of the original curve
-		
-		/*let totalError = 0;
-		for (let i = 3; i < numPoints; i++) {
-				const dx = userPoints[i].x / scaleFactor - originalPoints[i].x;
-				const dy = userPoints[i].y / scaleFactor - originalPoints[i].y;
-				totalError += Math.sqrt(dx * dx + dy * dy);
-		}
-		//errorDisplay.textContent = `Total Error: ${totalError.toFixed(0)} pixels`;
-		*/
-		
-		drawSpline(leftCtx, originalPoints);
-		drawSpline(rightCtx, originalPoints.map(p => ({ x: p.x * scaleFactor, y: p.y * scaleFactor })), false, 'blue');
+	drawSpline(leftCtx, originalPoints);
+	drawSpline(rightCtx, originalPoints.map(p => ({ x: p.x * scaleFactor, y: p.y * scaleFactor })), false, 'blue');
 }
 
 
@@ -510,60 +536,155 @@ rightCanvas.addEventListener('mouseup', stopDragging);
 rightCanvas.addEventListener('touchstart', handleTouch);
 rightCanvas.addEventListener('touchmove', handleTouch);
 rightCanvas.addEventListener('touchend', stopDragging);
+let touch = false;
 
 function startDragging(e) {
-    const rect = rightCanvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
-    
-    let minD = Infinity;
-    for (let i = nFixedBeg; i < userPoints.length - nFixedEnd; i++) {
-        const point = userPoints[i];
-        let d = (x - point.x) ** 2 + (y - point.y) ** 2;
-				if (d < minD) {
-						minD = d;
-						draggingPoint = i;
-						dragOffsetX = point.x - x;
-						dragOffsetY = point.y - y;
-				}
-    }
+	const rect = rightCanvas.getBoundingClientRect();
+	const x = (e.clientX || e.touches[0].clientX) - rect.left;
+	const y = (e.clientY || e.touches[0].clientY) - rect.top;
+	//const fingerOffset = touch ? 40 : 0;
+	const fingerOffset = 0;
+	
+	let minD = Infinity;
+	for (let i = nFixedBeg; i < userPoints.length - nFixedEnd; i++) {
+		const point = interactPoint(userPoints, i);
+		let d = (x - fingerOffset - point.x) ** 2 + (y - point.y) ** 2;
+		if (d < minD) {
+			minD = d;
+			draggingPoint = i;
+			dragOffsetX = userPoints[i].x - x;
+			dragOffsetY = userPoints[i].y - y;
+		}
+	}
 }
 
 function drag(e) {
-    if (draggingPoint !== null) {
-        const rect = rightCanvas.getBoundingClientRect();
-        const x = (e.clientX || e.touches[0].clientX) - rect.left;
-        const y = (e.clientY || e.touches[0].clientY) - rect.top;
-        
-        userPoints[draggingPoint].x = x + dragOffsetX;
-        userPoints[draggingPoint].y = y + dragOffsetY;
+	if (draggingPoint !== null) {
+		const rect = rightCanvas.getBoundingClientRect();
+		const x = (e.clientX || e.touches[0].clientX) - rect.left;
+		const y = (e.clientY || e.touches[0].clientY) - rect.top;
+		
+		userPoints[draggingPoint].x = x + dragOffsetX;
+		userPoints[draggingPoint].y = y + dragOffsetY;
 
-        rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
-        drawSpline(rightCtx, userPoints, true);
-    }
+		rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
+		drawSpline(rightCtx, userPoints, true);
+	}
 }
 
 function stopDragging() {
-    draggingPoint = null;
-    dragOffsetX = 0;
-    dragOffsetY = 0;
-		rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
-		drawSpline(rightCtx, userPoints, true); // for crearing dragged point
+	draggingPoint = null;
+	dragOffsetX = 0;
+	dragOffsetY = 0;
+	touch = false;
+	rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
+	drawSpline(rightCtx, userPoints, true); // for clearing dragged point
 }
 
 function handleTouch(e) {
-    e.preventDefault();
-    if (e.type === 'touchstart') {
-        startDragging(e);
-    } else if (e.type === 'touchmove') {
-        drag(e);
-    }
+	e.preventDefault();
+	if (e.type === 'touchstart') {
+			touch = true;
+			startDragging(e);
+	} else if (e.type === 'touchmove') {
+			drag(e);
+	}
 }
 
 
 
-generateBtn.addEventListener('click', generateNewLine);
-evaluateBtn.addEventListener('click', evaluateDrawing);
+const timeLimitCheckbox = document.getElementById('timeLimitCheckbox');
+const progressBar = document.getElementById('progressBar');
+const progressBarFill = document.getElementById('progressBarFill');
+
+let timeLimit = 20000; // 20 seconds
+let timerId = null;
+let startTime = null;
+let isGameActive = false;
+
+function startTimer() {
+    if (!timeLimitCheckbox.checked) return;
+    
+    isGameActive = true;
+    startTime = Date.now();
+    progressBar.style.display = 'block';
+    
+    function updateTimer() {
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, timeLimit - elapsedTime);
+        const progress = (remainingTime / timeLimit) * 100;
+        
+        progressBarFill.style.width = `${progress}%`;
+        
+        if (remainingTime <= 3000) {
+            progressBarFill.style.backgroundColor = '#FF0000';
+        } else {
+            progressBarFill.style.backgroundColor = '#0000FF';
+        }
+        
+        if (remainingTime > 0 && isGameActive) {
+            timerId = requestAnimationFrame(updateTimer);
+        } else {
+            endGame();
+        }
+    }
+    
+    updateTimer();
+}
+
+function endGame() {
+    isGameActive = false;
+		stopDragging();
+    cancelAnimationFrame(timerId);
+    evaluateDrawing();
+    disableInteraction();
+    
+    setTimeout(() => {
+        if (timeLimitCheckbox.checked && !isGameActive) {
+            generateNewLine();
+        }
+    }, 3000);
+}
+
+function disableInteraction() {
+    rightCanvas.removeEventListener('mousedown', startDragging);
+    rightCanvas.removeEventListener('mousemove', drag);
+    rightCanvas.removeEventListener('mouseup', stopDragging);
+    rightCanvas.removeEventListener('touchstart', handleTouch);
+    rightCanvas.removeEventListener('touchmove', handleTouch);
+    rightCanvas.removeEventListener('touchend', stopDragging);
+}
+
+function enableInteraction() {
+    rightCanvas.addEventListener('mousedown', startDragging);
+    rightCanvas.addEventListener('mousemove', drag);
+    rightCanvas.addEventListener('mouseup', stopDragging);
+    rightCanvas.addEventListener('touchstart', handleTouch);
+    rightCanvas.addEventListener('touchmove', handleTouch);
+    rightCanvas.addEventListener('touchend', stopDragging);
+}
+
+timeLimitCheckbox.addEventListener('change', () => {
+    if (timeLimitCheckbox.checked) {
+        progressBar.style.display = 'block';
+    } else {
+        progressBar.style.display = 'none';
+        cancelAnimationFrame(timerId);
+    }
+    generateNewLine();
+});
+
+
+generateBtn.addEventListener('click', () => {
+    cancelAnimationFrame(timerId);
+    generateNewLine();
+});
+
+evaluateBtn.addEventListener('click', () => {
+    cancelAnimationFrame(timerId);
+    evaluateDrawing();
+});
+
 
 resizeCanvases();
 //window.addEventListener('load', resizeCanvases);
