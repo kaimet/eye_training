@@ -519,9 +519,86 @@ function liftPointFromCurve(p0, p2, curvePoint) {
 	return {x, y};
 }
 
+
+function calculateAreaBetweenCurves(points1, points2, ctx) {
+    const numSamples = 1000;
+    let totalArea = 0;
+    let fillPath = new Path2D();
+
+    fillPath.moveTo(points1[0].x, points1[0].y);
+
+    for (let i = 0; i <= numSamples; i++) {
+        const t = i / numSamples;
+        const point1 = getPointOnSpline(points1, t);
+        fillPath.lineTo(point1.x, point1.y);
+    }
+
+    for (let i = numSamples; i >= 0; i--) {
+        const t = i / numSamples;
+        const point2 = getPointOnSpline(points2, t);
+        fillPath.lineTo(point2.x, point2.y);
+    }
+
+    fillPath.closePath();
+
+    // Calculate area
+		// commented out because it's a very slow algorithm (and doesn't really needed)
+    /*for (let x = 0; x < ctx.canvas.width; x++) {
+        for (let y = 0; y < ctx.canvas.height; y++) {
+            if (ctx.isPointInPath(fillPath, x, y)) {
+                totalArea++;
+            }
+        }
+    }*/
+
+    return { area: totalArea, path: fillPath };
+}
+
+function getPointOnSpline(points, t) {
+    const n = points.length;
+    const i = Math.min(Math.floor(t * (n - 1)), n - 2);
+    const localT = (t * (n - 1)) % 1;
+
+    const p0 = points[i];
+    const p1 = points[i + 1];
+    const p2 = points[(i + 2) % n];
+
+    const midPoint1 = {
+        x: (p0.x + p1.x) / 2,
+        y: (p0.y + p1.y) / 2
+    };
+    const midPoint2 = {
+        x: (p1.x + p2.x) / 2,
+        y: (p1.y + p2.y) / 2
+    };
+
+    return pointOnCurve(midPoint1, p1, midPoint2, localT);
+}
+
 function evaluateDrawing() {
-	drawSpline(leftCtx, originalPoints);
-	drawSpline(rightCtx, originalPoints.map(p => ({ x: p.x * scaleFactor, y: p.y * scaleFactor })), false, 'blue');
+    const originalScaled = originalPoints.map(p => ({ x: p.x * scaleFactor, y: p.y * scaleFactor }));
+    const { area, path } = calculateAreaBetweenCurves(originalScaled, userPoints, rightCtx);
+
+    // Clear the canvas
+    rightCtx.clearRect(0, 0, rightCanvas.width, rightCanvas.height);
+
+    // Fill the area between curves
+    rightCtx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+    rightCtx.fill(path);
+
+    // Draw the original curve
+    drawSpline(rightCtx, originalScaled, false, 'blue');
+
+    // Draw the user's curve
+    drawSpline(rightCtx, userPoints, true, 'black');
+
+    // Display the error
+    /*const maxArea = rightCanvas.width * rightCanvas.height;
+    const errorPercentage = (area / maxArea * 100).toFixed(2);
+    rightCtx.fillStyle = 'black';
+    rightCtx.font = '16px Arial';
+    rightCtx.fillText(`Error: ${errorPercentage}%`, 10, 30);
+		*/
 }
 
 
